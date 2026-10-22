@@ -78,8 +78,8 @@ log_raw_data 预设为 False（如需逐样本日志加 --config.log_raw_data=Tr
 flow_grpo/stat_tracking.py
 flow_grpo/hpsv2_scorer.py
 flow_grpo/rewards.py
-config/awr.py:sd3_hpsv2","待创建启动器 scripts/launchers/run_a1_2_flowawr_sd3_hpsv2_8gpu.sh：复制 A1 启动器，仅改 --config=config/awr.py:sd3_hpsv2、SAVE_DIR 默认 logs/sd3/hpsv2、RUN_NAME 默认 flowawr_sd3_hpsv2
-bash scripts/launchers/run_a1_2_flowawr_sd3_hpsv2_8gpu.sh",flowawr_sd3_hpsv2,待开始,1,论文无表格数值，仅 Figure 4b 曲线；对比对象为同图 DiffusionNFT 曲线
+config/awr.py:sd3_hpsv2
+scripts/launchers/run_a1_2_flowawr_sd3_hpsv2_8gpu.sh",bash scripts/launchers/run_a1_2_flowawr_sd3_hpsv2_8gpu.sh,flowawr_sd3_hpsv2,待开始,1,论文无表格数值，仅 Figure 4b 曲线；对比对象为同图 DiffusionNFT 曲线
 A1.3,FlowAWR 单奖励 baseline（SD3 + OCR）,main,OCR（eval_reward/ocr 原始分数，0 到 1）,"FlowAWR 单奖励 energy 分支，训练算法与 A1 相同，只换奖励与 prompt 集。
 advantage=(reward−组内均值)/(全局 reward 标准差+1e-4)，裁剪至[-5,5]，温度为 1；p=组内 softmax(advantage)。
 hard_gating=True：energy=clip((p−1/K)/max(std(p−1/K)+1e-4, 1e-2),-3,3)，按组内 std 归一化而不是乘 K，用于规则型奖励。
@@ -100,8 +100,8 @@ hard_gating=True
 flow_grpo/stat_tracking.py（hard_gating 分支）
 flow_grpo/ocr.py
 flow_grpo/rewards.py
-config/awr.py:sd3_ocr","待创建启动器 scripts/launchers/run_a1_3_flowawr_sd3_ocr_8gpu.sh：复制 A1 启动器，仅改 --config=config/awr.py:sd3_ocr、SAVE_DIR 默认 logs/sd3/ocr、RUN_NAME 默认 flowawr_sd3_ocr
-bash scripts/launchers/run_a1_3_flowawr_sd3_ocr_8gpu.sh",flowawr_sd3_ocr,待开始,1,论文 Figure 3 表 OCR 行：FlowAWR 0.26k 步 OCR 0.975，GenEval 0.29，PickScore 19.43；DiffusionNFT 0.4k 步 OCR 0.98
+config/awr.py:sd3_ocr
+scripts/launchers/run_a1_3_flowawr_sd3_ocr_8gpu.sh",bash scripts/launchers/run_a1_3_flowawr_sd3_ocr_8gpu.sh,flowawr_sd3_ocr,待开始,1,论文 Figure 3 表 OCR 行：FlowAWR 0.26k 步 OCR 0.975，GenEval 0.29，PickScore 19.43；DiffusionNFT 0.4k 步 OCR 0.98
 A1.4,FlowAWR 单奖励 baseline（SD3 + GenEval）,main,GenEval 严格准确率（eval_reward/geneval，0 到 1）,"FlowAWR 单奖励 energy 分支，训练算法与 A1 相同，只换奖励与 prompt 集。
 advantage=(reward−组内均值)/(全局 reward 标准差+1e-4)，裁剪至[-5,5]，温度为 1；p=组内 softmax(advantage)。
 hard_gating=True：energy=clip((p−1/K)/max(std(p−1/K)+1e-4, 1e-2),-3,3)，按组内 std 归一化而不是乘 K，用于规则型奖励。
@@ -122,5 +122,5 @@ hard_gating=True
 flow_grpo/stat_tracking.py（hard_gating 分支）
 flow_grpo/gen_eval.py
 flow_grpo/rewards.py
-config/awr.py:sd3_geneval","待创建启动器 scripts/launchers/run_a1_4_flowawr_sd3_geneval_8gpu.sh：复制 A1 启动器，仅改 --config=config/awr.py:sd3_geneval、SAVE_DIR 默认 logs/sd3/geneval、RUN_NAME 默认 flowawr_sd3_geneval
-bash scripts/launchers/run_a1_4_flowawr_sd3_geneval_8gpu.sh",flowawr_sd3_geneval,待开始,1,论文 Figure 3 表 GenEval 行：FlowAWR 0.5k 步 GenEval 0.98，OCR 0.37，PickScore 20.25；DiffusionNFT 1k 步 GenEval 0.98
+config/awr.py:sd3_geneval
+scripts/launchers/run_a1_4_flowawr_sd3_geneval_8gpu.sh",bash scripts/launchers/run_a1_4_flowawr_sd3_geneval_8gpu.sh,flowawr_sd3_geneval,待开始,1,论文 Figure 3 表 GenEval 行：FlowAWR 0.5k 步 GenEval 0.98，OCR 0.37，PickScore 20.25；DiffusionNFT 1k 步 GenEval 0.98
