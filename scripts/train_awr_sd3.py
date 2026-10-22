@@ -294,7 +294,7 @@ def eval_fn(
         time.sleep(0)
         rewards, reward_metadata = rewards_future.result()
 
-        # 逐张记录评估图片的原始 PickScore 和 prompt，不求批次平均，并递增样本编号。
+        # 逐张记录评估图片的原始奖励分数和 prompt，不求批次平均，并递增样本编号。
         if raw_logger is not None:
             log_sample_batch(
                 raw_logger, split="eval", epoch=epoch, global_step=global_step,
@@ -559,10 +559,10 @@ def main(_):
     logger.info(f"  Number of inner epochs = {config.train.num_inner_epochs}")
 
     reward_fn = getattr(flow_grpo.rewards, "multi_score")(
-        device, config.reward_fn, capture_pickscore_raw=raw_logger is not None
+        device, config.reward_fn, capture_raw=raw_logger is not None
     )
     eval_reward_fn = getattr(flow_grpo.rewards, "multi_score")(
-        device, config.reward_fn, capture_pickscore_raw=raw_logger is not None
+        device, config.reward_fn, capture_raw=raw_logger is not None
     )
 
     # --- Resume from checkpoint ---

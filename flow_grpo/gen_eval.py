@@ -340,7 +340,7 @@ def load_geneval(DEVICE):
     POSITION_THRESHOLD = 0.1
 
     @torch.no_grad()
-    def compute_geneval(images, metadatas, only_strict=False):
+    def compute_geneval(images, metadatas, only_strict=False, return_results=False):
         required_keys = [
             "single_object",
             "two_object",
@@ -368,13 +368,17 @@ def load_geneval(DEVICE):
                 else:
                     grouped_strict_rewards[tag].append(1.0 if result["strict_correct"] else 0.0)
                     grouped_rewards[tag].append(1.0 if result["correct"] else 0.0)
-        return (
+        outputs = (
             scores,
             rewards,
             strict_rewards,
             dict(grouped_rewards),
             dict(grouped_strict_rewards),
         )
+        if return_results:
+            # Per-image verdicts (tag, strict_correct, score, reason, ...) for raw-data logging.
+            return outputs + (results,)
+        return outputs
 
     return compute_geneval
 

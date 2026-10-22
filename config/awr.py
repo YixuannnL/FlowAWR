@@ -118,6 +118,7 @@ def sd3_ocr():
     config.beta = 0.1
     config.decay_type = 1
     config.train.hard_gating = True
+    config.log_raw_data = True
     return config
 
 
@@ -135,6 +136,7 @@ def sd3_geneval():
         name="geneval",
     )
     config.train.hard_gating = True
+    config.log_raw_data = True
     return config
 
 
@@ -161,6 +163,7 @@ def sd3_hpsv2():
     config = _get_config(
         base_model="sd3", n_gpus=8, gradient_step_per_epoch=1, dataset="pickscore", reward_fn=reward_fn, name="hpsv2"
     )
+    config.log_raw_data = True
     return config
 
 

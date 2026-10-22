@@ -58,7 +58,7 @@ config/base.py 第 99 行（默认值 1.0）
 scripts/launchers/run_a1_flowawr_sd3_pickscore_8gpu.sh（合作者的 A1 启动器，A2.1 复用）
 本实验不修改任何代码文件","RUN_NAME=flowawr_sd3_pickscore_tau0.3_c3.33 bash scripts/launchers/run_a1_flowawr_sd3_pickscore_8gpu.sh --config.train.temperature=0.3
 bash scripts/launchers/run_a1_flowawr_sd3_pickscore_8gpu.sh",flowawr_sd3_pickscore_tau0.3_c3.33,待开始,1,
-A1.2,FlowAWR 单奖励 baseline（SD3 + HPSv2.1）,main,HPSv2.1（eval_reward/hpsv2 原始分数）,"FlowAWR 单奖励 energy 分支，训练算法与 A1 相同，只换奖励与 prompt 集。
+A1.2,FlowAWR 单奖励 baseline（SD3 + HPSv2.1）,main,HPSv2.1（eval_reward_hpsv2，评分器原始分数，无缩放）,"FlowAWR 单奖励 energy 分支，训练算法与 A1 相同，只换奖励与 prompt 集。
 advantage=(reward−组内均值)/(全局 reward 标准差+1e-4)，裁剪至[-5,5]，温度为 1；p=组内 softmax(advantage)。
 energy=clip(Kp−1,-3,3)，K 为实际同 prompt 组大小（hard_gating=False，与 A1 一致）。
 target_x0=pred_x0_old+energy×(x0−pred_x0_old)，逐样本归一化 MSE 加参考模型 KL 项。
@@ -72,15 +72,16 @@ global_std=True；adv_clip_max=5；temperature=1；energy 范围=[-3,3]；filter
 配置入口：config/awr.py:sd3_hpsv2
 训练 prompt 集：dataset/pickscore（Pick-a-Pic，与 A1 相同）；测试集 pickscore 2048 条，test_batch_size=16
 梯度累积=16；每 epoch 1 次 optimizer 更新；hard_gating=False
-log_raw_data 预设为 False（如需逐样本日志加 --config.log_raw_data=True，仅写日志不改目标）
+log_raw_data=True（预设已改为开启；逐样本记录 hpsv2 原始分数 reward_raw、advantage_clipped、softmax_prob、energy_before_clip、energy_used 及训练项，只写日志不改目标）
 至少跑到 600 步（论文 Figure 4b：FlowAWR 约 450 步到 0.378，DiffusionNFT 约 560 步到 0.371）
 依赖：pip install hpsv2x==1.2.0；reward_ckpts/HPS_v2.1_compressed.pt","scripts/train_awr_sd3.py
 flow_grpo/stat_tracking.py
 flow_grpo/hpsv2_scorer.py
+flow_grpo/pickscore_logging.py（单奖励逐样本日志）
 flow_grpo/rewards.py
 config/awr.py:sd3_hpsv2
-scripts/launchers/run_a1_2_flowawr_sd3_hpsv2_8gpu.sh",bash scripts/launchers/run_a1_2_flowawr_sd3_hpsv2_8gpu.sh,flowawr_sd3_hpsv2,待开始,1,论文无表格数值，仅 Figure 4b 曲线；对比对象为同图 DiffusionNFT 曲线
-A1.3,FlowAWR 单奖励 baseline（SD3 + OCR）,main,OCR（eval_reward/ocr 原始分数，0 到 1）,"FlowAWR 单奖励 energy 分支，训练算法与 A1 相同，只换奖励与 prompt 集。
+scripts/launchers/run_a1_2_flowawr_sd3_hpsv2_8gpu.sh",bash scripts/launchers/run_a1_2_flowawr_sd3_hpsv2_8gpu.sh,flowawr_sd3_hpsv2,待开始,1,
+A1.3,FlowAWR 单奖励 baseline（SD3 + OCR）,main,OCR（eval_reward_ocr，1−编辑距离/目标长度，0 到 1）,"FlowAWR 单奖励 energy 分支，训练算法与 A1 相同，只换奖励与 prompt 集。
 advantage=(reward−组内均值)/(全局 reward 标准差+1e-4)，裁剪至[-5,5]，温度为 1；p=组内 softmax(advantage)。
 hard_gating=True：energy=clip((p−1/K)/max(std(p−1/K)+1e-4, 1e-2),-3,3)，按组内 std 归一化而不是乘 K，用于规则型奖励。
 target_x0=pred_x0_old+energy×(x0−pred_x0_old)，逐样本归一化 MSE 加参考模型 KL 项。
@@ -95,18 +96,20 @@ global_std=True；adv_clip_max=5；temperature=1；energy 范围=[-3,3]；filter
 训练 prompt 集：dataset/ocr；测试集 ocr 1018 条，test_batch_size=16；prompt_fn=general_ocr
 gradient_step_per_epoch=2：梯度累积=8，每 epoch 2 次 optimizer 更新（与 A1 的 1 次不同）
 hard_gating=True
+log_raw_data=True（预设已改为开启；逐样本记录 reward_raw、识别文本、编辑距离、目标长度、OCR 失败标记，以及 advantage/energy 与训练项）
 至少跑到 400 步（论文 Figure 3 表：FlowAWR 0.26k 步到 0.975，DiffusionNFT 0.4k 步到 0.98）
 依赖：pip install paddlepaddle-gpu==2.6.2 paddleocr==2.9.1 python-Levenshtein；需先验证 Paddle 与集群 CUDA 运行时兼容；OCR 打分比 PickScore 慢，每轮耗时会高于 A1","scripts/train_awr_sd3.py
 flow_grpo/stat_tracking.py（hard_gating 分支）
-flow_grpo/ocr.py
+flow_grpo/ocr.py（return_raw 返回识别细节）
+flow_grpo/pickscore_logging.py（单奖励逐样本日志）
 flow_grpo/rewards.py
 config/awr.py:sd3_ocr
-scripts/launchers/run_a1_3_flowawr_sd3_ocr_8gpu.sh",bash scripts/launchers/run_a1_3_flowawr_sd3_ocr_8gpu.sh,flowawr_sd3_ocr,待开始,1,论文 Figure 3 表 OCR 行：FlowAWR 0.26k 步 OCR 0.975，GenEval 0.29，PickScore 19.43；DiffusionNFT 0.4k 步 OCR 0.98
-A1.4,FlowAWR 单奖励 baseline（SD3 + GenEval）,main,GenEval 严格准确率（eval_reward/geneval，0 到 1）,"FlowAWR 单奖励 energy 分支，训练算法与 A1 相同，只换奖励与 prompt 集。
+scripts/launchers/run_a1_3_flowawr_sd3_ocr_8gpu.sh",bash scripts/launchers/run_a1_3_flowawr_sd3_ocr_8gpu.sh,flowawr_sd3_ocr,待开始,1,
+A1.4,FlowAWR 单奖励 baseline（SD3 + GenEval）,main,GenEval 严格准确率 eval_reward_strict_accuracy（论文口径）；同时记录 eval_reward_geneval（部分得分均值）与 eval_reward_accuracy（非严格）,"FlowAWR 单奖励 energy 分支，训练算法与 A1 相同，只换奖励与 prompt 集。
 advantage=(reward−组内均值)/(全局 reward 标准差+1e-4)，裁剪至[-5,5]，温度为 1；p=组内 softmax(advantage)。
 hard_gating=True：energy=clip((p−1/K)/max(std(p−1/K)+1e-4, 1e-2),-3,3)，按组内 std 归一化而不是乘 K，用于规则型奖励。
 target_x0=pred_x0_old+energy×(x0−pred_x0_old)，逐样本归一化 MSE 加参考模型 KL 项。
-训练时只算 strict 奖励（only_strict=True），评估时同时记录 strict 与非 strict 及各子任务准确率。","GPU：8 张 H200，复用 A1 的环境与启动逻辑
+训练奖励是 GenEval 的部分得分 score（按 include 子句的计数/颜色/位置逐项打分后取均值，0 到 1），不是 0/1 严格正确；strict_accuracy、accuracy 及各 tag 子任务准确率只作评估记录。训练时 only_strict=True，不算非严格 correct。","GPU：8 张 H200，复用 A1 的环境与启动逻辑
 默认模型：stabilityai/stable-diffusion-3.5-medium；分辨率 512×512；LoRA r=32、alpha=64
 lr=3e-4；seed=42；fp16；KL 系数=1e-4；max_grad_norm=1；EMA=True；decay_type=1
 每 epoch 48 组×24 图=1152 图；每卡采样/训练 batch=9；rollout batches=16
@@ -117,10 +120,59 @@ global_std=True；adv_clip_max=5；temperature=1；energy 范围=[-3,3]；filter
 训练 prompt 集：dataset/geneval/train_metadata.jsonl；测试集 geneval 2212 条，test_batch_size=14；prompt_fn=geneval
 梯度累积=16；每 epoch 1 次 optimizer 更新
 hard_gating=True
+log_raw_data=True（预设已改为开启；逐样本记录 reward_raw=部分得分、tag、strict_correct、correct（训练时为 null）、reason，以及 advantage/energy 与训练项）
 至少跑到 600 步（论文 Figure 3 表：FlowAWR 0.5k 步到 0.98，DiffusionNFT 1k 步到 0.98）
 依赖：openmim + mmengine；MMCV 1.x（MMCV_WITH_OPS=1 FORCE_CUDA=1 源码安装）；MMDetection 2.x；reward_ckpts/mask2former_swin-s-p4-w7-224_lsj_8x2_50e_coco_20220504_001756-743b7d99.pth；open-clip-torch、clip-benchmark。环境最老最难装，先在集群确认","scripts/train_awr_sd3.py
 flow_grpo/stat_tracking.py（hard_gating 分支）
-flow_grpo/gen_eval.py
+flow_grpo/gen_eval.py（return_results 返回逐图判定）
+flow_grpo/pickscore_logging.py（单奖励逐样本日志）
 flow_grpo/rewards.py
 config/awr.py:sd3_geneval
-scripts/launchers/run_a1_4_flowawr_sd3_geneval_8gpu.sh",bash scripts/launchers/run_a1_4_flowawr_sd3_geneval_8gpu.sh,flowawr_sd3_geneval,待开始,1,论文 Figure 3 表 GenEval 行：FlowAWR 0.5k 步 GenEval 0.98，OCR 0.37，PickScore 20.25；DiffusionNFT 1k 步 GenEval 0.98
+scripts/launchers/run_a1_4_flowawr_sd3_geneval_8gpu.sh",bash scripts/launchers/run_a1_4_flowawr_sd3_geneval_8gpu.sh,flowawr_sd3_geneval,待开始,1,
+A1.5,FlowAWR，PickScore 奖励 × GenEval 的 advantage 归一化（hard_gating=True）,main,PickScore（原始分数）,"与 A1 完全相同的训练，唯一改动：train.hard_gating 从 False 改为 True，即把 GenEval/OCR 预设用的组内 std 归一化能量用在 PickScore 上。
+前半段不变：reward=PickScore/26；advantage=(reward−组内均值)/(全局 std+1e-4)，裁剪 ±5；p=组内 softmax(advantage)；e_raw=p−1/K。
+A1：energy=clip(K·e_raw, −3, 3)，K=24。
+A1.5：energy=clip(e_raw / max(std_组内(e_raw)+1e-4, 1e-2), −3, 3)。
+target_x0=pred_x0_old+energy×(x0−pred_x0_old)，逐样本归一化 MSE 加 KL 项，与 A1 相同。
+预期行为（由 A2.1 记录的官方运行 energy std≈0.18 推算，待数据核实）：e_raw 的组内 std≈0.18/24≈0.0075，低于 1e-2 下限，分母多数时间取 0.01，于是 energy≈100·e_raw，相当于 A1 能量整体放大约 4.2 倍；组内最大值约 1.75×4.2≈7，正样本顶端会被 +3 裁剪。若某组 e_raw std 超过 0.01，则该组被归一到单位 std。与 A2.1（softmax 前乘 3.33，非线性来自 softmax）不同，这里非线性来自 ±3 裁剪和分母下限。","GPU：8 张 H200，复用 A1 的环境与启动逻辑
+默认模型：stabilityai/stable-diffusion-3.5-medium；分辨率 512×512；LoRA r=32、alpha=64
+lr=3e-4；seed=42；fp16；KL 系数=1e-4；max_grad_norm=1；EMA=True；decay_type=1
+每 epoch 48 组×24 图=1152 图；每卡采样/训练 batch=9；rollout batches=16；梯度累积=16；每 epoch 1 次 optimizer 更新
+训练/评估采样步数=10/40；guidance_scale=1.0；训练 deterministic DPM2；timestep_fraction=0.99
+global_std=True；adv_clip_max=5；temperature=1；energy 范围=[-3,3]；filter_zero_advantage=False
+每 10 epoch 评估/保存（含 epoch 0）
+配置入口：config/awr.py:sd3_pickscore
+训练 prompt 集：dataset/pickscore；测试集 pickscore 2048 条，test_batch_size=16
+hard_gating=True（唯一改动）
+log_raw_data=True（预设自带，逐样本落盘 advantage_clipped、softmax_prob、energy_before_clip、energy_used，可直接核对上面的预期）
+至少跑到 600 轮，与 A1、A2.1 对齐
+基线：A1（同环境逻辑、同 seed、同卡数，prompt 顺序逐步一致）","flow_grpo/stat_tracking.py 第 66 到 70 行（hard_gating 分支：gating_energy_stds = max(std+1e-4, 1e-2)，energies_reranged = raw_energies / gating_energy_stds）
+scripts/train_awr_sd3.py 第 835 行（把 config.train.hard_gating 传入 stat_tracker.update）
+flow_grpo/pickscore_logging.py（单奖励逐样本日志）
+config/awr.py 第 102 行（_get_config 默认 hard_gating=False）
+scripts/launchers/run_a1_5_flowawr_sd3_pickscore_hardgating_8gpu.sh（由 A1 启动器派生，仅改保存目录、运行名并追加 --config.train.hard_gating=True）
+本实验不修改任何代码文件",bash scripts/launchers/run_a1_5_flowawr_sd3_pickscore_hardgating_8gpu.sh,flowawr_sd3_pickscore_hardgating,待开始,1,
+A1.6,FlowAWR，GenEval 奖励 × PickScore 的 advantage 归一化（hard_gating=False）,main,GenEval 严格准确率 eval_reward_strict_accuracy（论文口径）；同时记录 eval_reward_geneval（部分得分均值）与 eval_reward_accuracy（非严格）,"与 A1.4 完全相同的训练，唯一改动：train.hard_gating 从 True 改为 False，即把 PickScore 预设用的乘 K 能量用在 GenEval 上。
+前半段不变：reward=GenEval 部分得分 score（0 到 1，离散档位，整组同分常见）；advantage=(reward−组内均值)/(全局 std+1e-4)，裁剪 ±5；p=组内 softmax(advantage)；e_raw=p−1/K。
+A1.4：energy=clip(e_raw / max(std_组内(e_raw)+1e-4, 1e-2), −3, 3)。
+A1.6：energy=clip(K·e_raw, −3, 3)=clip(24p−1, −3, 3)，即论文 Eq. 11 的 G·p−1。
+target_x0=pred_x0_old+energy×(x0−pred_x0_old)，逐样本归一化 MSE 加 KL 项，与 A1.4 相同。
+预期行为（按 0/1 两档奖励手算，待数据核实；实际部分得分有中间档，趋势相同）：整组同分时 p=1/K，energy=0，两种方式一致。组内少数成功时成功样本 advantage 远大于失败样本，softmax 把概率集中到成功样本，24p−1 可达 5 以上，被 +3 裁剪；失败样本 energy 约 −1 到 0。因此 A1.6 的组内能量和不再为零，正样本裁剪比例会明显高于 A1.4，这是两种归一化在离散奖励上的核心差别。","GPU：8 张 H200，复用 A1 的环境与启动逻辑
+默认模型：stabilityai/stable-diffusion-3.5-medium；分辨率 512×512；LoRA r=32、alpha=64
+lr=3e-4；seed=42；fp16；KL 系数=1e-4；max_grad_norm=1；EMA=True；decay_type=1
+每 epoch 48 组×24 图=1152 图；每卡采样/训练 batch=9；rollout batches=16；梯度累积=16；每 epoch 1 次 optimizer 更新
+训练/评估采样步数=10/40；guidance_scale=1.0；训练 deterministic DPM2；timestep_fraction=0.99
+global_std=True；adv_clip_max=5；temperature=1；energy 范围=[-3,3]；filter_zero_advantage=False
+每 10 epoch 评估/保存（含 epoch 0）
+配置入口：config/awr.py:sd3_geneval
+训练 prompt 集：dataset/geneval/train_metadata.jsonl；测试集 geneval 2212 条，test_batch_size=14；prompt_fn=geneval
+hard_gating=False（唯一改动）
+log_raw_data=True（sd3_geneval 预设已改为开启；逐样本记录 reward_raw、tag、strict_correct、reason 及 advantage_clipped、softmax_prob、energy_before_clip、energy_used，可直接核对上面的预期）
+至少跑到 600 步，与 A1.4 对齐
+基线：A1.4（同环境逻辑、同 seed、同卡数）
+依赖同 A1.4：MMCV 1.x、MMDetection 2.x、mask2former 权重、open-clip","flow_grpo/stat_tracking.py 第 66 到 70 行（hard_gating=False 分支：energies_reranged = raw_energies * k）
+scripts/train_awr_sd3.py 第 835 行
+flow_grpo/pickscore_logging.py（单奖励逐样本日志）
+config/awr.py 第 138 行（sd3_geneval 预设 hard_gating=True，本实验用命令行覆盖回 False）
+scripts/launchers/run_a1_6_flowawr_sd3_geneval_softk_8gpu.sh（由 A1.4 启动器派生，仅改保存目录、运行名并追加 --config.train.hard_gating=False）
+本实验不修改任何代码文件",bash scripts/launchers/run_a1_6_flowawr_sd3_geneval_softk_8gpu.sh,flowawr_sd3_geneval_softk,待开始,2,

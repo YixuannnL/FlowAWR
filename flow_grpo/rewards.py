@@ -37,7 +37,7 @@ def clip_score(device):
     return _fn
 
 
-def hpsv2_score(device):
+def hpsv2_score(device, capture_raw=False):
     from flow_grpo.hpsv2_scorer import HPSv2Scorer
 
     scorer = HPSv2Scorer(dtype=torch.float32, device=device)
@@ -47,6 +47,9 @@ def hpsv2_score(device):
             images = images.transpose(0, 3, 1, 2)  # NHWC -> NCHW
             images = torch.tensor(images, dtype=torch.uint8) / 255.0
         scores = scorer(images, prompts)
+        if capture_raw:
+            # HPSv2.1 is used unscaled as the reward; the raw value is the scorer output itself.
+            return scores, {"hpsv2_raw": scores.detach().float().cpu().numpy()}
         return scores, {}
 
     return _fn
@@ -89,7 +92,7 @@ def imagereward_score(device):
     return _fn
 
 
-def geneval_score(device):
+def geneval_score(device, capture_raw=False):
     from flow_grpo.gen_eval import load_geneval
 
     batch_size = 64
@@ -107,6 +110,7 @@ def geneval_score(device):
         all_strict_rewards = []
         all_group_strict_rewards = []
         all_group_rewards = []
+        all_details = []
         for image_batch, metadata_batched in zip(images_batched, metadatas_batched):
             pil_images = [Image.fromarray(image) for image in image_batch]
 
@@ -115,7 +119,20 @@ def geneval_score(device):
                 "metadatas": list(metadata_batched),
                 "only_strict": only_strict,
             }
-            scores, rewards, strict_rewards, group_rewards, group_strict_rewards = compute_geneval(**data)
+            if capture_raw:
+                scores, rewards, strict_rewards, group_rewards, group_strict_rewards, results = compute_geneval(
+                    **data, return_results=True
+                )
+                for result in results:
+                    all_details.append(dict(
+                        tag=result["tag"], score=float(result["score"]),
+                        strict_correct=bool(result["strict_correct"]),
+                        # evaluate() is skipped during training (only_strict=True); None marks "not computed".
+                        correct=None if only_strict else bool(result["correct"]),
+                        reason=result["reason"],
+                    ))
+            else:
+                scores, rewards, strict_rewards, group_rewards, group_strict_rewards = compute_geneval(**data)
 
             all_scores += scores
             all_rewards += rewards
@@ -134,12 +151,20 @@ def geneval_score(device):
                 all_group_rewards_dict[key].extend(value)
         all_group_rewards_dict = dict(all_group_rewards_dict)
 
-        return all_scores, all_rewards, all_strict_rewards, all_group_rewards_dict, all_group_strict_rewards_dict
+        reward_metadata = {}
+        if capture_raw:
+            # The training reward is the partial-credit score; keep it plus the per-sample verdicts.
+            reward_metadata["geneval_raw"] = np.array(all_scores, dtype=np.float64)
+            reward_metadata["geneval_detail"] = all_details
+        return (
+            all_scores, all_rewards, all_strict_rewards, all_group_rewards_dict, all_group_strict_rewards_dict,
+            reward_metadata,
+        )
 
     return _fn
 
 
-def ocr_score(device):
+def ocr_score(device, capture_raw=False):
     from flow_grpo.ocr import OcrScorer
 
     scorer = OcrScorer()
@@ -148,6 +173,9 @@ def ocr_score(device):
         if isinstance(images, torch.Tensor):
             images = (images * 255).round().clamp(0, 255).to(torch.uint8).cpu().numpy()
             images = images.transpose(0, 2, 3, 1)  # NCHW -> NHWC
+        if capture_raw:
+            scores, details = scorer(images, prompts, return_raw=True)
+            return scores, {"ocr_raw": np.array(scores, dtype=np.float64), "ocr_detail": details}
         scores = scorer(images, prompts)
         # change tensor to list
         return scores, {}
@@ -330,7 +358,11 @@ def videoalign_score(device):
     return _fn 
 
 
-def multi_score(device, score_dict, capture_pickscore_raw=False):
+# Rewards whose per-sample raw outputs can be captured for the raw-data logger.
+RAW_CAPTURE_REWARDS = ("pickscore", "hpsv2", "ocr", "geneval")
+
+
+def multi_score(device, score_dict, capture_raw=False):
     score_functions = {
         "ocr": ocr_score,
         "imagereward": imagereward_score,
@@ -345,8 +377,8 @@ def multi_score(device, score_dict, capture_pickscore_raw=False):
     }
     score_fns = {}
     for score_name, weight in score_dict.items():
-        if score_name == "pickscore" and capture_pickscore_raw:
-            score_fns[score_name] = pickscore_score(device, capture_raw=True)
+        if capture_raw and score_name in RAW_CAPTURE_REWARDS:
+            score_fns[score_name] = score_functions[score_name](device, capture_raw=True)
             continue
         score_fns[score_name] = (
             score_functions[score_name](device)
@@ -362,9 +394,11 @@ def multi_score(device, score_dict, capture_pickscore_raw=False):
 
         for score_name, weight in score_dict.items():
             if score_name == "geneval":
-                scores, rewards, strict_rewards, group_rewards, group_strict_rewards = score_fns[score_name](
+                scores, rewards, strict_rewards, group_rewards, group_strict_rewards, meta = score_fns[score_name](
                     images, prompts, metadata, only_strict
                 )
+                if capture_raw:
+                    reward_metadata.update(meta)
                 score_details["accuracy"] = rewards
                 score_details["strict_accuracy"] = strict_rewards
                 for key, value in group_strict_rewards.items():
@@ -372,10 +406,10 @@ def multi_score(device, score_dict, capture_pickscore_raw=False):
                 for key, value in group_rewards.items():
                     score_details[f"{key}_accuracy"] = value
             else:
-                scores, rewards = score_fns[score_name](images, prompts, metadata)
-                if score_name == "pickscore" and capture_pickscore_raw:
+                scores, meta = score_fns[score_name](images, prompts, metadata)
+                if capture_raw:
                     # Keep raw outputs in metadata, never in score_details/avg.
-                    reward_metadata["pickscore_raw"] = rewards["pickscore_raw"]
+                    reward_metadata.update(meta)
             if isinstance(scores, torch.Tensor):
                 scores = scores.detach().cpu().numpy()
             scores_arr = np.array(scores, dtype=np.float64)

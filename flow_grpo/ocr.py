@@ -19,21 +19,25 @@ class OcrScorer:
         self._lock = threading.Lock()
 
     @torch.no_grad()
-    def __call__(self, images: Union[List[Image.Image], List[np.ndarray]], prompts: List[str]) -> torch.Tensor:
+    def __call__(self, images: Union[List[Image.Image], List[np.ndarray]], prompts: List[str], return_raw: bool = False):
         """
         Calculate OCR reward
         :param images: List of input images (PIL or numpy format)
         :param prompts: Corresponding target text list
-        :return: Reward tensor (CPU)
+        :param return_raw: Also return per-sample recognition details (text, edit distance)
+        :return: Reward list; with return_raw, a (rewards, details) tuple
         """
         prompts = [prompt.split('"')[1] for prompt in prompts]
         rewards = []
+        details = []
         # Ensure input lengths are consistent
         assert len(images) == len(prompts), "Images and prompts must have the same length"
         for img, prompt in zip(images, prompts):
             if isinstance(img, Image.Image):
                 img = np.array(img)
 
+            recognized_text = None
+            ocr_failed = False
             try:
                 with self._lock:
                     result = self.ocr.ocr(img, cls=False)
@@ -52,10 +56,17 @@ class OcrScorer:
 
             except Exception as e:
                 print(f"OCR processing failed: {str(e)}")
+                ocr_failed = True
                 dist = len(prompt)
             reward = 1 - dist / (len(prompt))
             rewards.append(reward)
+            details.append(dict(
+                recognized_text=recognized_text, target_text=prompt,
+                edit_distance=int(dist), target_len=len(prompt), ocr_failed=ocr_failed,
+            ))
 
+        if return_raw:
+            return rewards, details
         return rewards
 
 

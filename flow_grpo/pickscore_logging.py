@@ -1,4 +1,4 @@
-"""SD3 单 PickScore 实验的逐样本日志，不跨样本或时间点求平均。"""
+"""SD3 单奖励（PickScore / HPSv2 / OCR / GenEval）实验的逐样本日志，不跨样本或时间点求平均。"""
 
 import datetime
 import hashlib
@@ -15,13 +15,23 @@ TRAINING_FIELDS = (
     "residual_l2", "delta_l2", "delta_residual_dot", "energy_used",
 )
 
+# 奖励名 -> 评分器在 reward_metadata 中给出的原始分数键和逐样本细节键。
+RAW_REWARD_KEYS = {
+    "pickscore": ("pickscore_raw", None),
+    "hpsv2": ("hpsv2_raw", None),
+    "ocr": ("ocr_raw", "ocr_detail"),
+    "geneval": ("geneval_raw", "geneval_detail"),
+}
+
 
 def create_raw_logger(config, rank, world_size):
     if not config.log_raw_data:
         return None
-    # 日志只对应当前单 PickScore 的 AWR energy 分支。
-    assert (set(config.reward_fn) == {"pickscore"} and config.train.energy_mode
-            and not config.gdpo and not config.filter_zero_advantage)
+    # 日志只对应单奖励的 AWR energy 分支；奖励必须是评分器能给出原始分数的那几种。
+    assert len(config.reward_fn) == 1, "raw logging supports exactly one reward"
+    reward_name = next(iter(config.reward_fn))
+    assert reward_name in RAW_REWARD_KEYS, f"raw logging has no raw-score capture for reward {reward_name!r}"
+    assert config.train.energy_mode and not config.gdpo and not config.filter_zero_advantage
 
     # 各卡使用同一个目录；每次启动（含续训）新建一段，避免样本编号重复。
     info = [None]
@@ -38,9 +48,9 @@ def create_raw_logger(config, rank, world_size):
         (root / "config.json").write_text(
             json.dumps(config.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8"
         )
-        print(f"Raw PickScore logs: {root}")
+        print(f"Raw {reward_name} logs: {root}")
     return dict(path=path, run_id=run_id, attempt_id=attempt, rank=rank,
-                prompts=set(), training=[])
+                reward_name=reward_name, prompts=set(), training=[])
 
 
 def _write_rows(log, table, rows):
@@ -77,14 +87,30 @@ def _prompt_ids(log, prompts):
 
 def log_sample_batch(log, *, split, epoch, global_step, sample_offset,
                      prompts, reward_metadata, model_adapter, dataset_size=None, world_size=1):
-    """逐张保存原始 PickScore；分数由评分器在除以 26 之前提供。"""
-    scores = reward_metadata["pickscore_raw"]
+    """逐张保存评分器的原始分数；PickScore 为除以 26 之前的值，其余奖励为评分器直接输出。
+
+    每行带 reward_name 与 reward_raw；PickScore 另保留 pickscore_raw 列以兼容已有分析。
+    OCR / GenEval 的逐样本细节（识别文本、编辑距离、tag、strict_correct、reason 等）展平进同一行。
+    """
+    reward_name = log["reward_name"]
+    raw_key, detail_key = RAW_REWARD_KEYS[reward_name]
+    scores = reward_metadata[raw_key]
+    details = reward_metadata[detail_key] if detail_key is not None else None
+    if details is not None:
+        assert len(details) == len(scores), "raw details must align with raw scores"
     rows = []
     for offset, (prompt_id, score) in enumerate(zip(_prompt_ids(log, prompts), scores, strict=True)):
         index = sample_offset + offset
         row = dict(sample_id=_sample_id(log, split, epoch, index), sample_index=index,
                    split=split, epoch=epoch, global_step=global_step,
-                   prompt_id=prompt_id, pickscore_raw=float(score), model_adapter=model_adapter)
+                   prompt_id=prompt_id, reward_name=reward_name, reward_raw=float(score),
+                   model_adapter=model_adapter)
+        if reward_name == "pickscore":
+            row["pickscore_raw"] = float(score)
+        if details is not None:
+            detail = details[offset]
+            assert not (set(detail) & set(row)), f"raw detail keys collide with row keys: {set(detail) & set(row)}"
+            row.update(detail)
         if dataset_size is not None:
             # eval 的 DistributedSampler 会补齐重复样本，分析时可据此排除。
             position = log["rank"] + index * world_size
