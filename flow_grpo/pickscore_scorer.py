@@ -15,7 +15,7 @@ class PickScoreScorer(torch.nn.Module):
         self.model = self.model.to(dtype=dtype)
 
     @torch.no_grad()
-    def __call__(self, prompt, images):
+    def __call__(self, prompt, images, return_raw=False):
         # Preprocess images
         image_inputs = self.processor(
             images=images,
@@ -46,8 +46,13 @@ class PickScoreScorer(torch.nn.Module):
         logit_scale = self.model.logit_scale.exp()
         scores = logit_scale * (text_embs @ image_embs.T)
         scores = scores.diag()
+        # Preserve the actual scorer output before normalization, without
+        # reconstructing it from rounded normalized scores or running twice.
+        raw_scores = scores if return_raw else None
         # norm到0-1
         scores = scores / 26
+        if return_raw:
+            return scores, raw_scores
         return scores
 
 

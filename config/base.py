@@ -15,6 +15,9 @@ def get_config():
     config.seed = 42
     # top-level logging directory for checkpoint saving.
     config.logdir = "logs"
+    # Per-sample SD3 PickScore/AWR logs; enabled by the sd3_pickscore preset.
+    # This only writes logs, never changes the training objective.
+    config.log_raw_data = False
     # number of epochs to train for. each epoch is one round of sampling from the model followed by training on those
     # samples.
     config.num_epochs = 100000

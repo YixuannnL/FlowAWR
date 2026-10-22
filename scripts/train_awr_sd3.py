@@ -25,6 +25,10 @@ from diffusers import StableDiffusion3Pipeline
 import numpy as np
 import flow_grpo.rewards
 from flow_grpo.stat_tracking import PerPromptStatTracker
+from flow_grpo.pickscore_logging import (
+    create_raw_logger, log_sample_batch, log_weight_batch,
+    log_training_batch, log_update, flush_training,
+)
 from flow_grpo.diffusers_patch.pipeline_with_logprob import pipeline_with_logprob
 from flow_grpo.diffusers_patch.train_dreambooth_lora_sd3 import encode_prompt
 import torch
@@ -218,6 +222,8 @@ def eval_fn(
     mixed_precision_dtype,
     ema,
     transformer_trainable_parameters,
+    raw_logger=None,
+    epoch=None,
 ):
     if config.train.ema and ema is not None:
         ema.copy_ema_to(transformer_trainable_parameters, store_temp=True)
@@ -246,6 +252,7 @@ def eval_fn(
         num_workers=test_dataloader.num_workers,
     )
 
+    raw_sample_offset = 0
     for test_batch in tqdm(
         eval_loader,
         desc="Eval: ",
@@ -286,6 +293,16 @@ def eval_fn(
         rewards_future = executor.submit(reward_fn, images, prompts, prompt_metadata, only_strict=False)
         time.sleep(0)
         rewards, reward_metadata = rewards_future.result()
+
+        # 逐张记录评估图片的原始 PickScore 和 prompt，不求批次平均，并递增样本编号。
+        if raw_logger is not None:
+            log_sample_batch(
+                raw_logger, split="eval", epoch=epoch, global_step=global_step,
+                sample_offset=raw_sample_offset, prompts=prompts, reward_metadata=reward_metadata,
+                model_adapter="ema" if config.train.ema and ema is not None else "default",
+                dataset_size=len(eval_loader.dataset), world_size=world_size,
+            )
+            raw_sample_offset += len(prompts)
 
         for key, value in rewards.items():
             rewards_tensor = torch.as_tensor(value, device=device).float()
@@ -373,6 +390,8 @@ def main(_):
     # Saving each result for Evaluation
     config.save_freq = config.eval_freq
     config.save_dir = os.path.join(config.save_dir, config.run_name, unique_id)
+
+    raw_logger = create_raw_logger(config, rank, world_size)
 
     # --- WandB Init (only on main process) ---
     if is_main_process(rank):
@@ -539,8 +558,12 @@ def main(_):
     logger.info(f"  Number of gradient updates per inner epoch = {samples_per_epoch // total_train_batch_size}")
     logger.info(f"  Number of inner epochs = {config.train.num_inner_epochs}")
 
-    reward_fn = getattr(flow_grpo.rewards, "multi_score")(device, config.reward_fn)  # Pass device
-    eval_reward_fn = getattr(flow_grpo.rewards, "multi_score")(device, config.reward_fn)  # Pass device
+    reward_fn = getattr(flow_grpo.rewards, "multi_score")(
+        device, config.reward_fn, capture_pickscore_raw=raw_logger is not None
+    )
+    eval_reward_fn = getattr(flow_grpo.rewards, "multi_score")(
+        device, config.reward_fn, capture_pickscore_raw=raw_logger is not None
+    )
 
     # --- Resume from checkpoint ---
     first_epoch = 0
@@ -602,6 +625,10 @@ def main(_):
         # SAMPLING
         pipeline.transformer.eval()
         samples_data_list = []
+        # Original text stays outside the tensor-only training buffer. Numeric
+        # sample indices below follow the existing sample shuffle automatically.
+        raw_prompt_batches = []
+        raw_sample_offset = raw_reward_offset = raw_reward_batch_index = 0
         # Stage timings. eval/save run inside the i == 0 iteration below and are
         # measured separately so they do not inflate the sampling number.
         epoch_t0 = time.time()
@@ -644,6 +671,8 @@ def main(_):
                     mixed_precision_dtype,
                     ema,
                     transformer_trainable_parameters,
+                    raw_logger=raw_logger,
+                    epoch=epoch,
                 )
                 eval_seconds = time.time() - eval_t0
                 if is_main_process(rank):
@@ -704,6 +733,12 @@ def main(_):
                     "rewards_future": rewards_future,  # Store future
                 }
             )
+            if raw_logger is not None:
+                samples_data_list[-1]["raw_sample_index"] = torch.arange(
+                    raw_sample_offset, raw_sample_offset + len(prompts), device=device
+                )
+                raw_prompt_batches.append(list(prompts))
+                raw_sample_offset += len(prompts)
 
         sampling_seconds = time.time() - epoch_t0 - eval_seconds - save_seconds
         if is_main_process(rank):
@@ -714,6 +749,15 @@ def main(_):
             samples_data_list, desc="Waiting for rewards", disable=not is_main_process(rank), position=0
         ):
             rewards, reward_metadata = sample_item["rewards_future"].result()
+            if raw_logger is not None:
+                raw_prompts = raw_prompt_batches[raw_reward_batch_index]
+                log_sample_batch(
+                    raw_logger, split="train", epoch=epoch, global_step=global_step,
+                    sample_offset=raw_reward_offset, prompts=raw_prompts,
+                    reward_metadata=reward_metadata, model_adapter="old",
+                )
+                raw_reward_offset += len(raw_prompts)
+                raw_reward_batch_index += 1
             sample_item["rewards"] = {k: torch.as_tensor(v, device=device).float() for k, v in rewards.items()}
             del sample_item["rewards_future"]
         reward_wait_seconds = time.time() - reward_t0
@@ -785,10 +829,19 @@ def main(_):
             )
             if not getattr(config, 'gdpo', False):
                 if config.train.energy_mode:
+                    raw_weight_diagnostics = {} if raw_logger is not None else None
                     advantages, energies, energy_stds = stat_tracker.update(
                         prompts_all_decoded, gathered_rewards_dict["avg"],
-                        exp=config.train.energy_mode, hard_gating=config.train.hard_gating
+                        exp=config.train.energy_mode, hard_gating=config.train.hard_gating,
+                        diagnostics=raw_weight_diagnostics,
                     )
+                    if raw_logger is not None:
+                        log_weight_batch(
+                            raw_logger, epoch=epoch, global_step=global_step,
+                            group_keys=prompts_all_decoded, diagnostics=raw_weight_diagnostics,
+                            samples_per_rank=collated_samples["timesteps"].shape[0],
+                        )
+                        del raw_weight_diagnostics
                 else:
                     advantages = stat_tracker.update(prompts_all_decoded, gathered_rewards_dict["avg"])
 
@@ -1117,6 +1170,16 @@ def main(_):
                         loss_terms["energy_clip_rate"] = (torch.abs(cur_energies) >= 2.99).float().mean().detach()
 
                     loss = policy_loss
+                    if raw_logger is not None:
+                        # 逐样本记录加 KL 前的 policy loss、残差大小和方向信息。
+                        log_training_batch(
+                            raw_logger, sample_index=train_sample_batch["raw_sample_index"],
+                            t=t, energy_used=cur_energies, x0=x0,
+                            pred_x0_old=pred_x0_old, pred_x0_current=x0_prediction,
+                            policy_loss=ori_policy_loss, weight_factor=weight_factor,
+                            epoch=epoch, global_step=global_step, inner_epoch=inner_epoch,
+                            microbatch=i, timestep_index=j_idx,
+                        )
                     loss_terms["policy_loss"] = policy_loss.detach()
                     loss_terms["unweighted_policy_loss"] = ori_policy_loss.mean().detach()
 
@@ -1156,7 +1219,15 @@ def main(_):
                     if current_accumulated_steps % effective_grad_accum_steps == 0:
                         if mixed_precision_dtype == torch.float16:
                             scaler.unscale_(optimizer)
-                        torch.nn.utils.clip_grad_norm_(transformer_ddp.module.parameters(), config.train.max_grad_norm)
+                        # Reuse the original clip call's return value: gradients
+                        # are already accumulated, synchronized and AMP-unscaled.
+                        grad_norm_before_clip = torch.nn.utils.clip_grad_norm_(
+                            transformer_ddp.module.parameters(), config.train.max_grad_norm
+                        )
+                        raw_amp_scale = (
+                            scaler.get_scale()
+                            if raw_logger is not None and mixed_precision_dtype == torch.float16 else None
+                        )
                         if mixed_precision_dtype == torch.float16:
                             scaler.step(optimizer)
                         else:
@@ -1165,6 +1236,16 @@ def main(_):
                         if mixed_precision_dtype == torch.float16:
                             scaler.update()
                         optimizer.zero_grad()
+
+                        if raw_logger is not None:
+                            log_update(
+                                raw_logger, epoch=epoch, global_step=global_step, inner_epoch=inner_epoch,
+                                grad_norm_before_clip=grad_norm_before_clip,
+                                max_grad_norm=config.train.max_grad_norm,
+                                optimizer_step_skipped=(
+                                    scaler.get_scale() < raw_amp_scale if raw_amp_scale is not None else False
+                                ),
+                            )
 
                         log_info = {k: torch.mean(torch.stack(v_list)).item() for k, v_list in info_accumulated.items()}
                         info_tensor = torch.tensor([log_info[k] for k in sorted(log_info.keys())], device=device)
@@ -1195,6 +1276,8 @@ def main(_):
             dist.barrier()
 
         training_seconds = time.time() - train_t0
+        if raw_logger is not None:
+            flush_training(raw_logger)
         epoch_seconds = time.time() - epoch_t0
         if is_main_process(rank):
             logger.info(
@@ -1222,6 +1305,8 @@ def main(_):
             ):
                 tgt_param.data.copy_(tgt_param.detach().data * decay + src_param.detach().clone().data * (1.0 - decay))
 
+    if raw_logger is not None:
+        flush_training(raw_logger)
     if is_main_process(rank):
         swanlab.finish()
     cleanup_distributed()

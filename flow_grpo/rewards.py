@@ -52,7 +52,7 @@ def hpsv2_score(device):
     return _fn
 
 
-def pickscore_score(device):
+def pickscore_score(device, capture_raw=False):
     from flow_grpo.pickscore_scorer import PickScoreScorer
 
     scorer = PickScoreScorer(dtype=torch.float32, device=device)
@@ -62,6 +62,10 @@ def pickscore_score(device):
             images = (images * 255).round().clamp(0, 255).to(torch.uint8).cpu().numpy()
             images = images.transpose(0, 2, 3, 1)  # NCHW -> NHWC
             images = [Image.fromarray(image) for image in images]
+        if capture_raw:
+            scores, raw_scores = scorer(prompts, images, return_raw=True)
+            # One batch transfer; diagnostic values stay out of reward arithmetic.
+            return scores, {"pickscore_raw": raw_scores.detach().cpu().numpy()}
         scores = scorer(prompts, images)
         return scores, {}
 
@@ -326,7 +330,7 @@ def videoalign_score(device):
     return _fn 
 
 
-def multi_score(device, score_dict):
+def multi_score(device, score_dict, capture_pickscore_raw=False):
     score_functions = {
         "ocr": ocr_score,
         "imagereward": imagereward_score,
@@ -341,6 +345,9 @@ def multi_score(device, score_dict):
     }
     score_fns = {}
     for score_name, weight in score_dict.items():
+        if score_name == "pickscore" and capture_pickscore_raw:
+            score_fns[score_name] = pickscore_score(device, capture_raw=True)
+            continue
         score_fns[score_name] = (
             score_functions[score_name](device)
             if "device" in score_functions[score_name].__code__.co_varnames
@@ -351,6 +358,7 @@ def multi_score(device, score_dict):
     def _fn(images, prompts, metadata, only_strict=True):
         total_scores = None
         score_details = {}
+        reward_metadata = {}
 
         for score_name, weight in score_dict.items():
             if score_name == "geneval":
@@ -365,6 +373,9 @@ def multi_score(device, score_dict):
                     score_details[f"{key}_accuracy"] = value
             else:
                 scores, rewards = score_fns[score_name](images, prompts, metadata)
+                if score_name == "pickscore" and capture_pickscore_raw:
+                    # Keep raw outputs in metadata, never in score_details/avg.
+                    reward_metadata["pickscore_raw"] = rewards["pickscore_raw"]
             if isinstance(scores, torch.Tensor):
                 scores = scores.detach().cpu().numpy()
             scores_arr = np.array(scores, dtype=np.float64)
@@ -377,6 +388,6 @@ def multi_score(device, score_dict):
                 total_scores = total_scores + weighted
 
         score_details["avg"] = total_scores
-        return score_details, {}
+        return score_details, reward_metadata
 
     return _fn

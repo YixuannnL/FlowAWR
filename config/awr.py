@@ -150,6 +150,7 @@ def sd3_pickscore():
         reward_fn=reward_fn,
         name="pickscore",
     )
+    config.log_raw_data = True
     return config
 
 

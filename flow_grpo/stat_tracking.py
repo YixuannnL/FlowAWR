@@ -14,13 +14,24 @@ class PerPromptStatTracker:
         self.temperature = temperature
 
     # exp reward is for rwr
-    def update(self, prompts, rewards, exp=False, hard_gating=False):
+    def update(self, prompts, rewards, exp=False, hard_gating=False, diagnostics=None):
+        """Update statistics, optionally copying per-sample intermediates for logging.
+
+        ``diagnostics`` never changes the returned training values. Its arrays
+        retain the input reward shape and order; advantage_clipped is captured
+        before temperature scaling, and energy_before_clip after rescaling.
+        """
         prompts = np.array(prompts)
         rewards = np.array(rewards, dtype=np.float64)
         unique = np.unique(prompts)
         advantages = np.zeros_like(rewards)
         energies = np.zeros_like(rewards) if exp else None
         energies_stds = np.zeros_like(rewards) if exp else None
+        if diagnostics is not None:
+            diagnostics["advantage_clipped"] = np.zeros_like(rewards)
+            if exp:
+                diagnostics["softmax_prob"] = np.zeros_like(rewards)
+                diagnostics["energy_before_clip"] = np.zeros_like(rewards)
         for prompt in unique:
             prompt_rewards = rewards[prompts == prompt]
             if prompt not in self.stats:
@@ -44,6 +55,8 @@ class PerPromptStatTracker:
                     np.clip(prompt_adv, -self.adv_clip_max, self.adv_clip_max)
                     if self.adv_clip_max is not None else prompt_adv
                 )
+                if diagnostics is not None:
+                    diagnostics["advantage_clipped"][prompts == prompt] = prompt_adv_clipped
                 prompt_adv_clipped = prompt_adv_clipped / self.temperature
                 exp_prompt_adv = np.exp(prompt_adv_clipped - np.max(prompt_adv_clipped, axis=0, keepdims=True))
                 probs = exp_prompt_adv / np.sum(exp_prompt_adv, axis=0, keepdims=True)
@@ -56,9 +69,20 @@ class PerPromptStatTracker:
                 else:
                     energies_reranged = raw_energies * k
 
+                if diagnostics is not None:
+                    diagnostics["softmax_prob"][prompts == prompt] = probs
+                    diagnostics["energy_before_clip"][prompts == prompt] = energies_reranged
                 energies_clipped = np.clip(energies_reranged, self.energy_min, self.energy_max)
                 energies[prompts == prompt] = energies_clipped
                 energies_stds[prompts == prompt] = energy_stds
+            elif diagnostics is not None:
+                # This tracker does not clip advantages outside energy mode.
+                diagnostics["advantage_clipped"][prompts == prompt] = prompt_adv
+        if diagnostics is not None:
+            # Copies keep later logging/serialization independent of training arrays.
+            diagnostics["advantage_raw"] = advantages.copy()
+            if exp:
+                diagnostics["energy_used"] = energies.copy()
         if exp:
             return advantages, energies, energies_stds
         return advantages
