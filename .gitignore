@@ -58,3 +58,6 @@ HPSv2/
 *.webm
 /dataset/ood/*.json
 !/dataset/ood/schema.json
+
+tensorboard_results/
+FlowAWR_original/
