@@ -34,6 +34,7 @@ logs/
 wandb/
 swanlog/
 .swanlab/
+.runtime-deps/
 evaluation_output/
 evaluation_output_after/
 inference_output/
