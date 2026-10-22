@@ -43,3 +43,21 @@ sketch：--sketch_dim=65536，--sketch_seed=0；--exact_check=true
 显存与训练的 9 样本 micro-batch 相同；输出约 16 卡×75MB=1.2GB；预计总时长 10 到 20 分钟（含模型加载）
 不写入 --out_dir 以外任何位置",scripts/probe_grad_snr_sd3.py,"torchrun --nnodes=2 --nproc_per_node=8 --node_rank=<0或1> --master_addr=$MASTER_ADDR --master_port=$MASTER_PORT scripts/probe_grad_snr_sd3.py --config config/awr.py:sd3_pickscore --lora_path """" --out_dir probe_runs/flowawr_probe_step0 --num_rounds 2 --sample_epoch 900","probe_runs/flowawr_probe_step0/
   sketch_rank{00..15}.npz、prompts_rank{00..15}.json、probe_meta.json",待开始,2,运行结束后把 probe_runs/flowawr_probe_step0/ 整个目录原样上传（含全部 npz 与 json）
+A2.1,FlowAWR，softmax 前 advantage × c(c = 3.33)（通过 temperature=0.3 实现，代码零改动）,main @ 2133360（无代码改动，仅配置项 train.temperature）,"Pickscore（原始分数）","与官方 FlowAWR 复现（seed 42、16 卡）完全相同的训练，唯一改动：组内 softmax 之前把 advantage 乘以 c = 3.33。
+实现方式是把配置项 train.temperature 从 1 改为 0.3。要说明的是：原代码里 temperature 只出现在 flow_grpo/stat_tracking.py 第 60 行 prompt_adv_clipped / self.temperature，紧接着就是 softmax，整个仓库再无别处使用它，所以""τ = 0.3""与""advantage × 3.33""产生逐位相同的 energy，这是同一个改动，不是两个。之所以用 temperature 而不是另加一行乘法，是为了不改任何代码文件。
+其余全部不变：reward = PickScore/26；advantage =（reward − 组内均值）/（全局 std + 1e-4）；裁剪 ±5（当前 advantage 只有 ±0.3，不触发）；p = softmax(advantage × 3.33)；energy = clip(24p − 1, −3, 3)；target_x0 = pred_x0_old + energy × (x0 − pred_x0_old)；逐样本归一化 MSE 加 KL 项。
+为什么是 c = 3.33：官方运行后期组内 advantage std 约 0.18，softmax 在这个尺度下是线性的，energy ≈ 去均值 advantage，±3 裁剪从不触发；Adam 对梯度整体缩放不敏感，所以 c ≤ 2 预期与基线无差别。c = 3.33 是非线性刚开始出现的档位：模拟显示 energy std 从 0.18 升到约 0.61，组内最大约 1.75，正样本比例从 46.6% 降到 39%，+3 裁剪比例约 0.3%，组和约 −0.05，即几乎不受裁剪干扰，看到的差别可归因于 softmax 非线性本身。c = 5 时裁剪比例升到 2%、组和 −0.66，混杂因素增多，留作下一组。","GPU：2 节点 × 8 张 A6000 = 16 卡，与官方复现 r01–r03 完全一致
+代码：main @ 2133360（训练相关文件与官方 r01–r03 所用 5ae282e 相比仅多了逐样本日志与审计记录，训练算法未变）
+启动：直接复用官方 r01–r03 的 16 卡启动器与全部参数（含 16 卡下的 num_batches_per_epoch=8、gradient_accumulation_steps=8，保证每轮 1152 张、每轮 1 次更新），只追加一个参数 --config.train.temperature=0.3
+seed=42（必须，与官方三组同 seed 才能逐步做残差比较）；fp16；lr=3e-4；KL 系数 1e-4；max_grad_norm=1；EMA=True
+每轮 48 组 × 24 图 = 1152 图；每卡 batch 9；训练/评估采样步数 10/40；guidance_scale=1.0；deterministic DPM2；timestep_fraction=0.99
+global_std=True；adv_clip_max=5；energy 范围 [−3, 3]；hard_gating=False
+temperature=0.3（唯一改动，等价于 advantage × 3.33）
+log_raw_data=True（HEAD 的 tracker 诊断会逐样本落盘 advantage_clipped、softmax_prob、energy_before_clip、energy_used，本实验正需要）
+每 10 轮评估/保存；至少跑到 600 轮再停，与官方曲线在 0–600 步区间对比
+若不能复用官方启动器而需从头写命令，16 卡下须显式加 --config.sample.num_batches_per_epoch=8 --config.train.gradient_accumulation_steps=8，否则 config 按 8 卡算出的 16 个 batch 会让每轮变成 2304 张","flow_grpo/stat_tracking.py 第 60 行（temperature 唯一生效位置，紧接 softmax）
+scripts/train_awr_sd3.py 第 540 行（把 config.train.temperature 传入 tracker）
+config/base.py 第 99 行（默认值 1.0）
+本实验不修改任何代码文件","torchrun --nproc_per_node=8 scripts/train_awr_sd3.py --config config/awr.py:sd3_pickscore --config.train.temperature=0.3 --config.run_name=flowawr_sd3_pickscore_tau0.3_c3.33","flowawr_sd3_pickscore_tau0.3_c3.33
+运行目录：logs/sd3/pickscore/flowawr_sd3_pickscore_tau0.3_c3.33/<时间戳>/
+TensorBoard 事件、checkpoints/checkpoint-N/lora、raw_data/<启动段>/rank-<rank>/ 逐样本日志",待开始,1,
