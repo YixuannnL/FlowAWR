@@ -17,3 +17,29 @@ flow_grpo/pickscore_scorer.py
 flow_grpo/rewards.py",torchrun --nproc_per_node=8 scripts/train_awr_sd3.py --config config/awr.py:sd3_pickscore,"flowawr_sd3_pickscore
 运行目录：logs/sd3/pickscore/flowawr_sd3_pickscore/<时间戳>/
 逐样本日志：运行目录/raw_data/<启动段>/rank-<rank>/",待开始,1,
+P1,FlowAWR 梯度信噪比探针（checkpoint-900）,main @ 5064d6e（含 scripts/probe_grad_snr_sd3.py、scripts/analyze_grad_snr.py；原训练文件未改动）,-,"离线梯度信噪比探针，不训练、不更新、不存 checkpoint。目的：在上训练之前，量化不同 advantage/energy 加权方案给出的梯度方向有多稳定，筛掉 Adam 下分辨不出的变体。
+原理：FlowAWR energy loss 在冻结 checkpoint 上（pred_x0_old 取当前预测 detach）样本 i 的梯度精确等于 energy_i×b_i，b_i=∇Σ_t mean((x0_pred−x0)²)/w_t 与加权方案无关；任何方案的整批梯度都是 Σ energy_i×b_i。
+GPU 端：用给定 LoRA 采 2 轮各 1152 张（48 组×24），算 PickScore，对每个样本在 9 个训练时间点上反向一次，LoRA 梯度用 count-sketch（随机符号哈希，K=65536）压缩保存；同时用训练原版 PerPromptStatTracker 的 energy 走训练 loss 原路反向一遍作精确校验（--exact_check）。
+回传后本地分析：对基线、×10 裁剪后（纯缩放对照）、×10 裁剪前、τ=0.5/0.3/0.2、组内 std、组内 std+中位数下限、正样本专用、线性 advantage、符号、top-25%、best-of-k、组内打乱（噪声底）等方案，把 prompt 组随机分两半 300 次，算两半梯度的余弦（raw 与组内去均值两种），以及与基线梯度的余弦、权重分布、裁剪比例、组和。
+记录的梯度只含 policy loss，不含 KL 项。","GPU：16 张 A6000
+配置入口：config/awr.py:sd3_pickscore（脚本按实际 16 卡重排采样：每卡 batch=9，每轮每卡 8 个 batch，每轮仍为 1152 张）
+默认模型：stabilityai/stable-diffusion-3.5-medium；分辨率 512×512；LoRA r=32、alpha=64；fp16；seed=42
+LoRA 来源：官方 FlowAWR 复现 r01 的 checkpoints/checkpoint-900/lora（PEFT 目录，含 adapter_config.json 与 adapter_model.safetensors；路径由运行者按集群实际位置填入 --lora_path）
+采样：10 步 deterministic DPM2，guidance_scale=1.0，noise_level=0.7，奖励 PickScore/26
+轮数 --num_rounds=2（共 2304 张、96 组）；--sample_epoch=900（抽到的 prompt 与训练 step 900 那轮相同）
+反向：每样本 9 个训练时间点（timestep_fraction=0.99），每样本一次反向；--noise_seed=1234（所有方案共用同一噪声）；--loss_scale=1024（溢出自动按 8 倍缩小重试）
+sketch：--sketch_dim=65536，--sketch_seed=0；--exact_check=true
+显存与训练的 9 样本 micro-batch 相同；输出约 16 卡×75MB=1.2GB；预计总时长 10 到 20 分钟（含模型加载）
+不写入 --out_dir 以外任何位置",scripts/probe_grad_snr_sd3.py,torchrun --nnodes=2 --nproc_per_node=8 --node_rank=<0或1> --master_addr=$MASTER_ADDR --master_port=$MASTER_PORT scripts/probe_grad_snr_sd3.py --config config/awr.py:sd3_pickscore --lora_path <官方r01>/checkpoints/checkpoint-900/lora --out_dir probe_runs/flowawr_probe_ckpt900 --num_rounds 2 --sample_epoch 900,"probe_runs/flowawr_probe_ckpt900/
+  sketch_rank{00..15}.npz、prompts_rank{00..15}.json、probe_meta.json",待开始,1,运行结束后把 probe_runs/flowawr_probe_ckpt900/ 整个目录原样上传（含全部 npz 与 json）
+P2,FlowAWR 梯度信噪比探针（step 0 对照，基础模型）,main @ 5064d6e（含 scripts/probe_grad_snr_sd3.py、scripts/analyze_grad_snr.py；原训练文件未改动）,-,同 P1，但 LoRA 为新初始化（等价于基础模型）。与 P1 对照可看各方案的信噪比随训练阶段的变化。,"GPU：16 张 A6000
+配置入口：config/awr.py:sd3_pickscore（脚本按实际 16 卡重排采样：每卡 batch=9，每轮每卡 8 个 batch，每轮仍为 1152 张）
+默认模型：stabilityai/stable-diffusion-3.5-medium；分辨率 512×512；LoRA r=32、alpha=64；fp16；seed=42
+LoRA 来源：--lora_path 留空，使用新初始化 LoRA（B=0，等价于基础模型），作为 step 0 对照
+采样：10 步 deterministic DPM2，guidance_scale=1.0，noise_level=0.7，奖励 PickScore/26
+轮数 --num_rounds=2（共 2304 张、96 组）；--sample_epoch=900（与 P1 抽同一批 prompt，便于对照）
+反向：每样本 9 个训练时间点（timestep_fraction=0.99），每样本一次反向；--noise_seed=1234（所有方案共用同一噪声）；--loss_scale=1024（溢出自动按 8 倍缩小重试）
+sketch：--sketch_dim=65536，--sketch_seed=0；--exact_check=true
+显存与训练的 9 样本 micro-batch 相同；输出约 16 卡×75MB=1.2GB；预计总时长 10 到 20 分钟（含模型加载）
+不写入 --out_dir 以外任何位置",scripts/probe_grad_snr_sd3.py,"torchrun --nnodes=2 --nproc_per_node=8 --node_rank=<0或1> --master_addr=$MASTER_ADDR --master_port=$MASTER_PORT scripts/probe_grad_snr_sd3.py --config config/awr.py:sd3_pickscore --lora_path """" --out_dir probe_runs/flowawr_probe_step0 --num_rounds 2 --sample_epoch 900","probe_runs/flowawr_probe_step0/
+  sketch_rank{00..15}.npz、prompts_rank{00..15}.json、probe_meta.json",待开始,2,运行结束后把 probe_runs/flowawr_probe_step0/ 整个目录原样上传（含全部 npz 与 json）
