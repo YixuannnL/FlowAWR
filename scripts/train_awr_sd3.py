@@ -1242,6 +1242,7 @@ def main(_):
                                 raw_logger, epoch=epoch, global_step=global_step, inner_epoch=inner_epoch,
                                 grad_norm_before_clip=grad_norm_before_clip,
                                 max_grad_norm=config.train.max_grad_norm,
+                                scaler_scale=raw_amp_scale,
                                 optimizer_step_skipped=(
                                     scaler.get_scale() < raw_amp_scale if raw_amp_scale is not None else False
                                 ),

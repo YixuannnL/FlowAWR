@@ -150,7 +150,7 @@ def flush_training(log):
 
 
 def log_update(log, *, epoch, global_step, inner_epoch, grad_norm_before_clip,
-               max_grad_norm, optimizer_step_skipped):
+               max_grad_norm, scaler_scale, optimizer_step_skipped):
     # 复用原 clip_grad_norm_ 的返回值，不再裁剪一次。系数与 PyTorch 一致。
     norm = grad_norm_before_clip.detach()
     coefficient = (float(max_grad_norm) / (norm + 1e-6)).clamp(max=1.0)
@@ -160,4 +160,6 @@ def log_update(log, *, epoch, global_step, inner_epoch, grad_norm_before_clip,
         epoch=epoch, global_step=global_step, inner_epoch=inner_epoch,
         grad_norm_before_clip=norm, grad_clip_coefficient=coefficient,
         max_grad_norm=float(max_grad_norm), optimizer_step_skipped=optimizer_step_skipped,
+        # 本次梯度使用的 scale（scaler.update 前）；未使用缩放时为 null。
+        scaler_scale=scaler_scale,
     )])
