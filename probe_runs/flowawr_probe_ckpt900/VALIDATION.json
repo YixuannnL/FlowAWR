@@ -1,0 +1,145 @@
+{
+  "world_size": 16,
+  "total_samples": 2304,
+  "num_rounds": 2,
+  "samples_per_round": {
+    "0": 1152,
+    "1": 1152
+  },
+  "all_gradients_finite": true,
+  "exact_cosine_min": 0.9999979609659428,
+  "ranks": [
+    {
+      "rank": 0,
+      "samples": 144,
+      "basis_gradients_finite": true,
+      "exact_gradient_finite": true,
+      "exact_cosine": 0.9999979609659428,
+      "bytes": 38028057
+    },
+    {
+      "rank": 1,
+      "samples": 144,
+      "basis_gradients_finite": true,
+      "exact_gradient_finite": true,
+      "exact_cosine": 0.999999220035189,
+      "bytes": 38028057
+    },
+    {
+      "rank": 2,
+      "samples": 144,
+      "basis_gradients_finite": true,
+      "exact_gradient_finite": true,
+      "exact_cosine": 0.9999993118866437,
+      "bytes": 38028057
+    },
+    {
+      "rank": 3,
+      "samples": 144,
+      "basis_gradients_finite": true,
+      "exact_gradient_finite": true,
+      "exact_cosine": 0.9999993928218711,
+      "bytes": 38028057
+    },
+    {
+      "rank": 4,
+      "samples": 144,
+      "basis_gradients_finite": true,
+      "exact_gradient_finite": true,
+      "exact_cosine": 0.9999993799127243,
+      "bytes": 38028057
+    },
+    {
+      "rank": 5,
+      "samples": 144,
+      "basis_gradients_finite": true,
+      "exact_gradient_finite": true,
+      "exact_cosine": 0.9999995085982722,
+      "bytes": 38028057
+    },
+    {
+      "rank": 6,
+      "samples": 144,
+      "basis_gradients_finite": true,
+      "exact_gradient_finite": true,
+      "exact_cosine": 0.999998658716965,
+      "bytes": 38028057
+    },
+    {
+      "rank": 7,
+      "samples": 144,
+      "basis_gradients_finite": true,
+      "exact_gradient_finite": true,
+      "exact_cosine": 0.9999993557305721,
+      "bytes": 38028057
+    },
+    {
+      "rank": 8,
+      "samples": 144,
+      "basis_gradients_finite": true,
+      "exact_gradient_finite": true,
+      "exact_cosine": 0.9999992342703293,
+      "bytes": 38028057
+    },
+    {
+      "rank": 9,
+      "samples": 144,
+      "basis_gradients_finite": true,
+      "exact_gradient_finite": true,
+      "exact_cosine": 0.9999993315119475,
+      "bytes": 38028057
+    },
+    {
+      "rank": 10,
+      "samples": 144,
+      "basis_gradients_finite": true,
+      "exact_gradient_finite": true,
+      "exact_cosine": 0.9999995310840607,
+      "bytes": 38028057
+    },
+    {
+      "rank": 11,
+      "samples": 144,
+      "basis_gradients_finite": true,
+      "exact_gradient_finite": true,
+      "exact_cosine": 0.9999988486261684,
+      "bytes": 38028057
+    },
+    {
+      "rank": 12,
+      "samples": 144,
+      "basis_gradients_finite": true,
+      "exact_gradient_finite": true,
+      "exact_cosine": 0.9999992782159093,
+      "bytes": 38028057
+    },
+    {
+      "rank": 13,
+      "samples": 144,
+      "basis_gradients_finite": true,
+      "exact_gradient_finite": true,
+      "exact_cosine": 0.9999989678857155,
+      "bytes": 38028057
+    },
+    {
+      "rank": 14,
+      "samples": 144,
+      "basis_gradients_finite": true,
+      "exact_gradient_finite": true,
+      "exact_cosine": 0.9999990964686383,
+      "bytes": 38028057
+    },
+    {
+      "rank": 15,
+      "samples": 144,
+      "basis_gradients_finite": true,
+      "exact_gradient_finite": true,
+      "exact_cosine": 0.9999989064691469,
+      "bytes": 38028057
+    }
+  ],
+  "group_sizes": {
+    "24": 96
+  },
+  "output": "/mnt/shared_storage/usr/kevinliu/flowawr/four-experiments-c3beaf6-20261022/probe_runs/flowawr_probe_ckpt900"
+}

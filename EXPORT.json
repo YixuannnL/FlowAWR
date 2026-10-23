@@ -1,0 +1,561 @@
+{
+  "scope": [
+    "a1",
+    "p1",
+    "p2",
+    "a21"
+  ],
+  "source_commit": "c3beaf68c69d24c38391801e610a4400bece1c14",
+  "source_repository": "git@github-new:YixuannnL/FlowAWR.git",
+  "output_root": "/mnt/shared_storage/usr/kevinliu/flowawr/four-experiments-c3beaf6-20261022",
+  "snapshot_start_utc": "2026-10-23T02:50:23.303999+00:00",
+  "snapshot_end_utc": "2026-10-23T02:52:13.603731+00:00",
+  "training": [
+    {
+      "experiment": "a1",
+      "run_key": "flowawr_sd3_pickscore__2026.10.22_11.35.49",
+      "source": {
+        "source": "/mnt/shared_storage/usr/kevinliu/flowawr/four-experiments-c3beaf6-20261022/training/flowawr_sd3_pickscore/2026.10.22_11.35.49/run-20261022_113552-p08kjijh/run-p08kjijh.swanlab",
+        "relative": "training/flowawr_sd3_pickscore/2026.10.22_11.35.49/run-20261022_113552-p08kjijh/run-p08kjijh.swanlab",
+        "bytes": 27975389,
+        "sha256": "987a2d6e21dbf62db81c6c2c47c6b652e3fb326f67e0e095b329b9e89d4e319c",
+        "snapshot_utc": "2026-10-23T02:51:55.269006+00:00",
+        "source_mtime": 1792723915.237
+      },
+      "scan": {
+        "source_bytes": 27975389,
+        "complete_prefix_bytes": 27975389,
+        "trailing_bytes": 0,
+        "complete_prefix_sha256": "987a2d6e21dbf62db81c6c2c47c6b652e3fb326f67e0e095b329b9e89d4e319c"
+      },
+      "record_types": {
+        "start": 1,
+        "save": 4,
+        "log": 11299,
+        "column": 96,
+        "scalar": 322481,
+        "media": 140
+      },
+      "scalar_tags": 94,
+      "scalar_points": 322481,
+      "all_scalar_values_exact": true,
+      "output": "runs/pickscore/flowawr_sd3_pickscore__2026.10.22_11.35.49/events.out.tfevents.swanlab-scalars.0000",
+      "output_sha256": "3b843552d7804e698d88935cbb76cdd0b02711f173861540282f960e0c031a5f",
+      "audit": {
+        "ranks": [
+          {
+            "rank": 0,
+            "scheduled_updates": 691,
+            "executed_updates": 691,
+            "last_epoch": 690,
+            "tail_bytes": 0,
+            "amp_skips": 0,
+            "skipped_global_steps": []
+          },
+          {
+            "rank": 1,
+            "scheduled_updates": 691,
+            "executed_updates": 691,
+            "last_epoch": 690,
+            "tail_bytes": 0,
+            "amp_skips": 0,
+            "skipped_global_steps": []
+          },
+          {
+            "rank": 2,
+            "scheduled_updates": 691,
+            "executed_updates": 691,
+            "last_epoch": 690,
+            "tail_bytes": 0,
+            "amp_skips": 0,
+            "skipped_global_steps": []
+          },
+          {
+            "rank": 3,
+            "scheduled_updates": 691,
+            "executed_updates": 691,
+            "last_epoch": 690,
+            "tail_bytes": 0,
+            "amp_skips": 0,
+            "skipped_global_steps": []
+          },
+          {
+            "rank": 4,
+            "scheduled_updates": 691,
+            "executed_updates": 691,
+            "last_epoch": 690,
+            "tail_bytes": 0,
+            "amp_skips": 0,
+            "skipped_global_steps": []
+          },
+          {
+            "rank": 5,
+            "scheduled_updates": 691,
+            "executed_updates": 691,
+            "last_epoch": 690,
+            "tail_bytes": 0,
+            "amp_skips": 0,
+            "skipped_global_steps": []
+          },
+          {
+            "rank": 6,
+            "scheduled_updates": 691,
+            "executed_updates": 691,
+            "last_epoch": 690,
+            "tail_bytes": 0,
+            "amp_skips": 0,
+            "skipped_global_steps": []
+          },
+          {
+            "rank": 7,
+            "scheduled_updates": 691,
+            "executed_updates": 691,
+            "last_epoch": 690,
+            "tail_bytes": 0,
+            "amp_skips": 0,
+            "skipped_global_steps": []
+          },
+          {
+            "rank": 8,
+            "scheduled_updates": 691,
+            "executed_updates": 691,
+            "last_epoch": 690,
+            "tail_bytes": 0,
+            "amp_skips": 0,
+            "skipped_global_steps": []
+          },
+          {
+            "rank": 9,
+            "scheduled_updates": 691,
+            "executed_updates": 691,
+            "last_epoch": 690,
+            "tail_bytes": 0,
+            "amp_skips": 0,
+            "skipped_global_steps": []
+          },
+          {
+            "rank": 10,
+            "scheduled_updates": 691,
+            "executed_updates": 691,
+            "last_epoch": 690,
+            "tail_bytes": 0,
+            "amp_skips": 0,
+            "skipped_global_steps": []
+          },
+          {
+            "rank": 11,
+            "scheduled_updates": 691,
+            "executed_updates": 691,
+            "last_epoch": 690,
+            "tail_bytes": 0,
+            "amp_skips": 0,
+            "skipped_global_steps": []
+          },
+          {
+            "rank": 12,
+            "scheduled_updates": 691,
+            "executed_updates": 691,
+            "last_epoch": 690,
+            "tail_bytes": 0,
+            "amp_skips": 0,
+            "skipped_global_steps": []
+          },
+          {
+            "rank": 13,
+            "scheduled_updates": 691,
+            "executed_updates": 691,
+            "last_epoch": 690,
+            "tail_bytes": 0,
+            "amp_skips": 0,
+            "skipped_global_steps": []
+          },
+          {
+            "rank": 14,
+            "scheduled_updates": 691,
+            "executed_updates": 691,
+            "last_epoch": 690,
+            "tail_bytes": 0,
+            "amp_skips": 0,
+            "skipped_global_steps": []
+          },
+          {
+            "rank": 15,
+            "scheduled_updates": 691,
+            "executed_updates": 691,
+            "last_epoch": 690,
+            "tail_bytes": 0,
+            "amp_skips": 0,
+            "skipped_global_steps": []
+          }
+        ],
+        "scheduled_updates_min": 691,
+        "scheduled_updates_max": 691,
+        "executed_updates_min": 691,
+        "executed_updates_max": 691,
+        "amp_skips": 0,
+        "skipped_global_steps": [],
+        "samples_per_round": 1152
+      },
+      "latest_train": {
+        "step": 690,
+        "wall_time": 1792723858.655051,
+        "value": 0.908046305179596
+      },
+      "latest_eval": {
+        "step": 690,
+        "wall_time": 1792723831.706662,
+        "value": 0.916087806224823
+      }
+    },
+    {
+      "experiment": "a21",
+      "run_key": "flowawr_sd3_pickscore_tau0.3_c3.33__2026.10.22_12.34.23",
+      "source": {
+        "source": "/mnt/shared_storage/usr/kevinliu/flowawr/four-experiments-c3beaf6-20261022/training/flowawr_sd3_pickscore_tau0.3_c3.33/2026.10.22_12.34.23/run-20261022_123427-nvmyqv78/run-nvmyqv78.swanlab",
+        "relative": "training/flowawr_sd3_pickscore_tau0.3_c3.33/2026.10.22_12.34.23/run-20261022_123427-nvmyqv78/run-nvmyqv78.swanlab",
+        "bytes": 26180320,
+        "sha256": "26293b8dc0eb1144f130e6ba38ba9e2481cfd69d290045567c14874b04ce17ad",
+        "snapshot_utc": "2026-10-23T02:52:03.882393+00:00",
+        "source_mtime": 1792723894.89
+      },
+      "scan": {
+        "source_bytes": 26180320,
+        "complete_prefix_bytes": 26180320,
+        "trailing_bytes": 0,
+        "complete_prefix_sha256": "26293b8dc0eb1144f130e6ba38ba9e2481cfd69d290045567c14874b04ce17ad"
+      },
+      "record_types": {
+        "start": 1,
+        "save": 4,
+        "log": 10623,
+        "column": 96,
+        "scalar": 301905,
+        "media": 130
+      },
+      "scalar_tags": 94,
+      "scalar_points": 301905,
+      "all_scalar_values_exact": true,
+      "output": "runs/pickscore/flowawr_sd3_pickscore_tau0.3_c3.33__2026.10.22_12.34.23/events.out.tfevents.swanlab-scalars.0000",
+      "output_sha256": "1811f1031572f9104d845c269f6247f243253b32d7ff1a77df4e93296e71da98",
+      "audit": {
+        "ranks": [
+          {
+            "rank": 0,
+            "scheduled_updates": 650,
+            "executed_updates": 647,
+            "last_epoch": 649,
+            "tail_bytes": 0,
+            "amp_skips": 3,
+            "skipped_global_steps": [
+              167,
+              169,
+              177
+            ]
+          },
+          {
+            "rank": 1,
+            "scheduled_updates": 650,
+            "executed_updates": 647,
+            "last_epoch": 649,
+            "tail_bytes": 0,
+            "amp_skips": 3,
+            "skipped_global_steps": [
+              167,
+              169,
+              177
+            ]
+          },
+          {
+            "rank": 2,
+            "scheduled_updates": 650,
+            "executed_updates": 647,
+            "last_epoch": 649,
+            "tail_bytes": 0,
+            "amp_skips": 3,
+            "skipped_global_steps": [
+              167,
+              169,
+              177
+            ]
+          },
+          {
+            "rank": 3,
+            "scheduled_updates": 650,
+            "executed_updates": 647,
+            "last_epoch": 649,
+            "tail_bytes": 0,
+            "amp_skips": 3,
+            "skipped_global_steps": [
+              167,
+              169,
+              177
+            ]
+          },
+          {
+            "rank": 4,
+            "scheduled_updates": 650,
+            "executed_updates": 647,
+            "last_epoch": 649,
+            "tail_bytes": 0,
+            "amp_skips": 3,
+            "skipped_global_steps": [
+              167,
+              169,
+              177
+            ]
+          },
+          {
+            "rank": 5,
+            "scheduled_updates": 650,
+            "executed_updates": 647,
+            "last_epoch": 649,
+            "tail_bytes": 0,
+            "amp_skips": 3,
+            "skipped_global_steps": [
+              167,
+              169,
+              177
+            ]
+          },
+          {
+            "rank": 6,
+            "scheduled_updates": 650,
+            "executed_updates": 647,
+            "last_epoch": 649,
+            "tail_bytes": 0,
+            "amp_skips": 3,
+            "skipped_global_steps": [
+              167,
+              169,
+              177
+            ]
+          },
+          {
+            "rank": 7,
+            "scheduled_updates": 650,
+            "executed_updates": 647,
+            "last_epoch": 649,
+            "tail_bytes": 0,
+            "amp_skips": 3,
+            "skipped_global_steps": [
+              167,
+              169,
+              177
+            ]
+          },
+          {
+            "rank": 8,
+            "scheduled_updates": 650,
+            "executed_updates": 647,
+            "last_epoch": 649,
+            "tail_bytes": 0,
+            "amp_skips": 3,
+            "skipped_global_steps": [
+              167,
+              169,
+              177
+            ]
+          },
+          {
+            "rank": 9,
+            "scheduled_updates": 650,
+            "executed_updates": 647,
+            "last_epoch": 649,
+            "tail_bytes": 0,
+            "amp_skips": 3,
+            "skipped_global_steps": [
+              167,
+              169,
+              177
+            ]
+          },
+          {
+            "rank": 10,
+            "scheduled_updates": 650,
+            "executed_updates": 647,
+            "last_epoch": 649,
+            "tail_bytes": 0,
+            "amp_skips": 3,
+            "skipped_global_steps": [
+              167,
+              169,
+              177
+            ]
+          },
+          {
+            "rank": 11,
+            "scheduled_updates": 650,
+            "executed_updates": 647,
+            "last_epoch": 649,
+            "tail_bytes": 0,
+            "amp_skips": 3,
+            "skipped_global_steps": [
+              167,
+              169,
+              177
+            ]
+          },
+          {
+            "rank": 12,
+            "scheduled_updates": 650,
+            "executed_updates": 647,
+            "last_epoch": 649,
+            "tail_bytes": 0,
+            "amp_skips": 3,
+            "skipped_global_steps": [
+              167,
+              169,
+              177
+            ]
+          },
+          {
+            "rank": 13,
+            "scheduled_updates": 650,
+            "executed_updates": 647,
+            "last_epoch": 649,
+            "tail_bytes": 0,
+            "amp_skips": 3,
+            "skipped_global_steps": [
+              167,
+              169,
+              177
+            ]
+          },
+          {
+            "rank": 14,
+            "scheduled_updates": 650,
+            "executed_updates": 647,
+            "last_epoch": 649,
+            "tail_bytes": 0,
+            "amp_skips": 3,
+            "skipped_global_steps": [
+              167,
+              169,
+              177
+            ]
+          },
+          {
+            "rank": 15,
+            "scheduled_updates": 650,
+            "executed_updates": 647,
+            "last_epoch": 649,
+            "tail_bytes": 0,
+            "amp_skips": 3,
+            "skipped_global_steps": [
+              167,
+              169,
+              177
+            ]
+          }
+        ],
+        "scheduled_updates_min": 650,
+        "scheduled_updates_max": 650,
+        "executed_updates_min": 647,
+        "executed_updates_max": 647,
+        "amp_skips": 3,
+        "skipped_global_steps": [
+          167,
+          169,
+          177
+        ],
+        "samples_per_round": 1152
+      },
+      "latest_train": {
+        "step": 649,
+        "wall_time": 1792723838.547041,
+        "value": 0.6737360954284668
+      },
+      "latest_eval": {
+        "step": 640,
+        "wall_time": 1792723202.785287,
+        "value": 0.6202467083930969
+      }
+    }
+  ],
+  "probes": [
+    {
+      "experiment": "p1",
+      "run_key": "flowawr_probe_ckpt900",
+      "native_files": 34,
+      "native_bytes": 608930192,
+      "native_files_byte_identical": true,
+      "total_samples": 2304,
+      "prompt_groups": 96,
+      "group_size": 24,
+      "exact_cosine_min": 0.9999978474485319,
+      "analysis": {
+        "script": "scripts/analyze_grad_snr.py",
+        "script_sha256": "09d35ad13ae1e3d70c9a79f37468442096b8a3505452aeaf5d47b69146dcd8e2",
+        "source_commit": "c3beaf68c69d24c38391801e610a4400bece1c14",
+        "splits": 300,
+        "seed": 0,
+        "schemes": 17,
+        "numpy_version": "2.5.4",
+        "energy_clip": 3.0,
+        "adv_clip": 5.0
+      },
+      "tensorboard": {
+        "output": "runs/probes/flowawr_probe_ckpt900/events.out.tfevents.static-analysis.0000",
+        "sha256": "d074e89a04256f554f40b14431e1dcb2ea704dd09c6a3b5320b9b6ceef6ebae9",
+        "static_summary_step": 0,
+        "scalar_points": 343
+      }
+    },
+    {
+      "experiment": "p2",
+      "run_key": "flowawr_probe_step0",
+      "native_files": 34,
+      "native_bytes": 608930355,
+      "native_files_byte_identical": true,
+      "total_samples": 2304,
+      "prompt_groups": 96,
+      "group_size": 24,
+      "exact_cosine_min": 0.9999978772253414,
+      "analysis": {
+        "script": "scripts/analyze_grad_snr.py",
+        "script_sha256": "09d35ad13ae1e3d70c9a79f37468442096b8a3505452aeaf5d47b69146dcd8e2",
+        "source_commit": "c3beaf68c69d24c38391801e610a4400bece1c14",
+        "splits": 300,
+        "seed": 0,
+        "schemes": 17,
+        "numpy_version": "2.5.4",
+        "energy_clip": 3.0,
+        "adv_clip": 5.0
+      },
+      "tensorboard": {
+        "output": "runs/probes/flowawr_probe_step0/events.out.tfevents.static-analysis.0000",
+        "sha256": "de6d717bebd8cb1b796002ec5b61142be5daf377f923913bc2a2b95f2e537e4d",
+        "static_summary_step": 0,
+        "scalar_points": 343
+      }
+    }
+  ],
+  "source_patch": {
+    "path": "flow_grpo/pickscore_logging.py",
+    "sha256": "d4e12642c149a4bd450838afceac314d3ccad730973b80db0844522fff33b053",
+    "reason": "Bounded retries for transient shared-filesystem directory creation errors in sample logging; no training changes."
+  },
+  "deployment_package_sha256": {
+    "p1": "46914b560c275f14fbbb37bf864bfd5b2c14101873a9106de724abdeaaaf36b3",
+    "a1": "1b1599c43d646dbe049ad172d5b02f96dc4026eec31fac8191f214dcf0722a63",
+    "a21": "1b1599c43d646dbe049ad172d5b02f96dc4026eec31fac8191f214dcf0722a63",
+    "p2": "1b1599c43d646dbe049ad172d5b02f96dc4026eec31fac8191f214dcf0722a63"
+  },
+  "source_archive_sha256": {
+    "p1": "c908446e8536041e07aaf978f31d60bfe827afffa7d1a72afc4d06627eda7397",
+    "a1": "98c0e87d0a55a56c9e7a92a1ace7ec8175a8bda4e3a7340d5b4c9df8ca793e01",
+    "a21": "98c0e87d0a55a56c9e7a92a1ace7ec8175a8bda4e3a7340d5b4c9df8ca793e01",
+    "p2": "98c0e87d0a55a56c9e7a92a1ace7ec8175a8bda4e3a7340d5b4c9df8ca793e01"
+  },
+  "checkpoint_900_input": "/mnt/shared_storage/usr/kevinliu/flowawr/official-main-5ae282e-20261020/replica-01/fresh-20261020T164111Z/output/official-main-pickscore-r01-seed42/2026.10.20_16.42.14/checkpoints/checkpoint-900/lora",
+  "exported_images": 0,
+  "exported_checkpoints": 0,
+  "training_jobs_modified": false,
+  "conversion": {
+    "source_format": "SwanLab 0.9.0 LevelDB log v2 / ScalarRecord",
+    "scalar_dtype": "TensorBoard DT_DOUBLE with scalars plugin metadata",
+    "source_scalar_values_step_and_tags_preserved": true,
+    "exact_timestamp_storage": "data/<experiment>/scalars.jsonl.gz: integer seconds and nanoseconds",
+    "probe_view": "Derived static CPU analysis at step 0, not a training curve"
+  }
+}

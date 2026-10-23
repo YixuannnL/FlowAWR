@@ -1,0 +1,223 @@
+{
+  "ranks": [
+    {
+      "rank": 0,
+      "scheduled_updates": 650,
+      "executed_updates": 647,
+      "last_epoch": 649,
+      "tail_bytes": 0,
+      "amp_skips": 3,
+      "skipped_global_steps": [
+        167,
+        169,
+        177
+      ]
+    },
+    {
+      "rank": 1,
+      "scheduled_updates": 650,
+      "executed_updates": 647,
+      "last_epoch": 649,
+      "tail_bytes": 0,
+      "amp_skips": 3,
+      "skipped_global_steps": [
+        167,
+        169,
+        177
+      ]
+    },
+    {
+      "rank": 2,
+      "scheduled_updates": 650,
+      "executed_updates": 647,
+      "last_epoch": 649,
+      "tail_bytes": 0,
+      "amp_skips": 3,
+      "skipped_global_steps": [
+        167,
+        169,
+        177
+      ]
+    },
+    {
+      "rank": 3,
+      "scheduled_updates": 650,
+      "executed_updates": 647,
+      "last_epoch": 649,
+      "tail_bytes": 0,
+      "amp_skips": 3,
+      "skipped_global_steps": [
+        167,
+        169,
+        177
+      ]
+    },
+    {
+      "rank": 4,
+      "scheduled_updates": 650,
+      "executed_updates": 647,
+      "last_epoch": 649,
+      "tail_bytes": 0,
+      "amp_skips": 3,
+      "skipped_global_steps": [
+        167,
+        169,
+        177
+      ]
+    },
+    {
+      "rank": 5,
+      "scheduled_updates": 650,
+      "executed_updates": 647,
+      "last_epoch": 649,
+      "tail_bytes": 0,
+      "amp_skips": 3,
+      "skipped_global_steps": [
+        167,
+        169,
+        177
+      ]
+    },
+    {
+      "rank": 6,
+      "scheduled_updates": 650,
+      "executed_updates": 647,
+      "last_epoch": 649,
+      "tail_bytes": 0,
+      "amp_skips": 3,
+      "skipped_global_steps": [
+        167,
+        169,
+        177
+      ]
+    },
+    {
+      "rank": 7,
+      "scheduled_updates": 650,
+      "executed_updates": 647,
+      "last_epoch": 649,
+      "tail_bytes": 0,
+      "amp_skips": 3,
+      "skipped_global_steps": [
+        167,
+        169,
+        177
+      ]
+    },
+    {
+      "rank": 8,
+      "scheduled_updates": 650,
+      "executed_updates": 647,
+      "last_epoch": 649,
+      "tail_bytes": 0,
+      "amp_skips": 3,
+      "skipped_global_steps": [
+        167,
+        169,
+        177
+      ]
+    },
+    {
+      "rank": 9,
+      "scheduled_updates": 650,
+      "executed_updates": 647,
+      "last_epoch": 649,
+      "tail_bytes": 0,
+      "amp_skips": 3,
+      "skipped_global_steps": [
+        167,
+        169,
+        177
+      ]
+    },
+    {
+      "rank": 10,
+      "scheduled_updates": 650,
+      "executed_updates": 647,
+      "last_epoch": 649,
+      "tail_bytes": 0,
+      "amp_skips": 3,
+      "skipped_global_steps": [
+        167,
+        169,
+        177
+      ]
+    },
+    {
+      "rank": 11,
+      "scheduled_updates": 650,
+      "executed_updates": 647,
+      "last_epoch": 649,
+      "tail_bytes": 0,
+      "amp_skips": 3,
+      "skipped_global_steps": [
+        167,
+        169,
+        177
+      ]
+    },
+    {
+      "rank": 12,
+      "scheduled_updates": 650,
+      "executed_updates": 647,
+      "last_epoch": 649,
+      "tail_bytes": 0,
+      "amp_skips": 3,
+      "skipped_global_steps": [
+        167,
+        169,
+        177
+      ]
+    },
+    {
+      "rank": 13,
+      "scheduled_updates": 650,
+      "executed_updates": 647,
+      "last_epoch": 649,
+      "tail_bytes": 0,
+      "amp_skips": 3,
+      "skipped_global_steps": [
+        167,
+        169,
+        177
+      ]
+    },
+    {
+      "rank": 14,
+      "scheduled_updates": 650,
+      "executed_updates": 647,
+      "last_epoch": 649,
+      "tail_bytes": 0,
+      "amp_skips": 3,
+      "skipped_global_steps": [
+        167,
+        169,
+        177
+      ]
+    },
+    {
+      "rank": 15,
+      "scheduled_updates": 650,
+      "executed_updates": 647,
+      "last_epoch": 649,
+      "tail_bytes": 0,
+      "amp_skips": 3,
+      "skipped_global_steps": [
+        167,
+        169,
+        177
+      ]
+    }
+  ],
+  "scheduled_updates_min": 650,
+  "scheduled_updates_max": 650,
+  "executed_updates_min": 647,
+  "executed_updates_max": 647,
+  "amp_skips": 3,
+  "skipped_global_steps": [
+    167,
+    169,
+    177
+  ],
+  "samples_per_round": 1152
+}

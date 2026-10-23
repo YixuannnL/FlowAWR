@@ -1,0 +1,132 @@
+{
+  "experiment": "p2",
+  "run_key": "flowawr_probe_step0",
+  "source_directory": "/mnt/shared_storage/usr/kevinliu/flowawr/four-experiments-c3beaf6-20261022/probe_runs/flowawr_probe_step0",
+  "native_files": 34,
+  "native_bytes": 608930355,
+  "native_files_byte_identical": true,
+  "total_samples": 2304,
+  "rounds": {
+    "0": 1152,
+    "1": 1152
+  },
+  "prompt_groups": 96,
+  "group_size": 24,
+  "all_gradients_finite": true,
+  "exact_cosine_min": 0.9999978772253414,
+  "ranks": [
+    {
+      "rank": 0,
+      "samples": 144,
+      "exact_cosine": 0.9999992062475391,
+      "all_finite": true
+    },
+    {
+      "rank": 1,
+      "samples": 144,
+      "exact_cosine": 0.9999995462215227,
+      "all_finite": true
+    },
+    {
+      "rank": 2,
+      "samples": 144,
+      "exact_cosine": 0.9999996450451697,
+      "all_finite": true
+    },
+    {
+      "rank": 3,
+      "samples": 144,
+      "exact_cosine": 0.999999435580528,
+      "all_finite": true
+    },
+    {
+      "rank": 4,
+      "samples": 144,
+      "exact_cosine": 0.9999978772253414,
+      "all_finite": true
+    },
+    {
+      "rank": 5,
+      "samples": 144,
+      "exact_cosine": 0.9999997619117446,
+      "all_finite": true
+    },
+    {
+      "rank": 6,
+      "samples": 144,
+      "exact_cosine": 0.9999993771025018,
+      "all_finite": true
+    },
+    {
+      "rank": 7,
+      "samples": 144,
+      "exact_cosine": 0.9999997711279798,
+      "all_finite": true
+    },
+    {
+      "rank": 8,
+      "samples": 144,
+      "exact_cosine": 0.9999993831209182,
+      "all_finite": true
+    },
+    {
+      "rank": 9,
+      "samples": 144,
+      "exact_cosine": 0.999999328037537,
+      "all_finite": true
+    },
+    {
+      "rank": 10,
+      "samples": 144,
+      "exact_cosine": 0.9999978779732117,
+      "all_finite": true
+    },
+    {
+      "rank": 11,
+      "samples": 144,
+      "exact_cosine": 0.9999990778462878,
+      "all_finite": true
+    },
+    {
+      "rank": 12,
+      "samples": 144,
+      "exact_cosine": 0.9999997609933535,
+      "all_finite": true
+    },
+    {
+      "rank": 13,
+      "samples": 144,
+      "exact_cosine": 0.9999997313037156,
+      "all_finite": true
+    },
+    {
+      "rank": 14,
+      "samples": 144,
+      "exact_cosine": 0.999998987410654,
+      "all_finite": true
+    },
+    {
+      "rank": 15,
+      "samples": 144,
+      "exact_cosine": 0.9999997191700828,
+      "all_finite": true
+    }
+  ],
+  "analysis": {
+    "script": "scripts/analyze_grad_snr.py",
+    "script_sha256": "09d35ad13ae1e3d70c9a79f37468442096b8a3505452aeaf5d47b69146dcd8e2",
+    "source_commit": "c3beaf68c69d24c38391801e610a4400bece1c14",
+    "splits": 300,
+    "seed": 0,
+    "schemes": 17,
+    "numpy_version": "2.5.4",
+    "energy_clip": 3.0,
+    "adv_clip": 5.0
+  },
+  "tensorboard": {
+    "output": "runs/probes/flowawr_probe_step0/events.out.tfevents.static-analysis.0000",
+    "sha256": "de6d717bebd8cb1b796002ec5b61142be5daf377f923913bc2a2b95f2e537e4d",
+    "static_summary_step": 0,
+    "scalar_points": 343
+  }
+}

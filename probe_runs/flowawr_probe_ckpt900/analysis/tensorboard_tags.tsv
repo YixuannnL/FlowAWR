@@ -1,0 +1,18 @@
+scheme	tag_prefix
+awr_global_t1 (baseline)	schemes/awr_global_t1_baseline
+awr_global_t1_x10_postclip (scale control)	schemes/awr_global_t1_x10_postclip_scale_control
+awr_global_t1_x10_preclip (clip at 0.3)	schemes/awr_global_t1_x10_preclip_clip_at_0.3
+awr_global_t0.5	schemes/awr_global_t0.5
+awr_global_t0.3	schemes/awr_global_t0.3
+awr_global_t0.2	schemes/awr_global_t0.2
+awr_prompt_std_t1	schemes/awr_prompt_std_t1
+awr_prompt_std_floor_t1	schemes/awr_prompt_std_floor_t1
+awr_prompt_std_floor_t0.5	schemes/awr_prompt_std_floor_t0.5
+awr_global_t1_pos	schemes/awr_global_t1_pos
+awr_prompt_std_floor_t1_pos	schemes/awr_prompt_std_floor_t1_pos
+linear_adv_global	schemes/linear_adv_global
+linear_adv_prompt_floor	schemes/linear_adv_prompt_floor
+sign_adv	schemes/sign_adv
+top25pct_one_hot	schemes/top25pct_one_hot
+best_of_k_one_hot	schemes/best_of_k_one_hot
+shuffled_baseline (noise floor)	schemes/shuffled_baseline_noise_floor
