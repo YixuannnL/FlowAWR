@@ -56,7 +56,7 @@ log_raw_data=True（逐样本落盘 advantage_clipped、softmax_prob、energy_be
 scripts/train_awr_sd3.py 第 540 行（把 config.train.temperature 传入 tracker）
 config/base.py 第 99 行（默认值 1.0）
 scripts/launchers/run_a1_flowawr_sd3_pickscore_8gpu.sh（合作者的 A1 启动器，A2.1 复用）
-本实验不修改任何代码文件",bash scripts/launchers/run_a1_flowawr_sd3_pickscore_8gpu.sh --config.train.temperature=0.3 --config.run_name=flowawr_sd3_pickscore_tau0.3_c3.33,flowawr_sd3_pickscore_tau0.3_c3.33,已失败,1,FAIL。从 step 1 起发散：step 1 energy_std 1.03、裁剪 6.3%、正样本 26%，组和约 −5/组；KL 从 step 2 单调上升，step 29 old_deviate_max 跳到 44，Eval 从 19.8 掉到 step 70 的 16.75，之后塌缩（step 640 Eval 16.13、KL 83.7、x0_norm 71.6、组内奖励 std 0.0025）。原因：c=3.33 按 step 900 的 advantage 尺度校准，step 0 尺度是其 3 倍，等效 c≈10，负组和注入与奖励无关的共模漂移。建议停止。
+本实验不修改任何代码文件",bash scripts/launchers/run_a1_flowawr_sd3_pickscore_8gpu.sh --config.train.temperature=0.3 --config.run_name=flowawr_sd3_pickscore_tau0.3_c3.33,flowawr_sd3_pickscore_tau0.3_c3.33,已失败,1,"FAIL。原因是正侧裁剪太多，负侧偏移太大了，组和往负走。c=10之后，组合从-0.05到了-5.11,energy为负的样本比例从58%升到了76%"
 A1.2,FlowAWR 单奖励 baseline（SD3 + HPSv2.1）,main,HPSv2.1（eval_reward_hpsv2，评分器原始分数，无缩放）,"FlowAWR 单奖励 energy 分支，训练算法与 A1 相同，只换奖励与 prompt 集。
 advantage=(reward−组内均值)/(全局 reward 标准差+1e-4)，裁剪至[-5,5]，温度为 1；p=组内 softmax(advantage)。
 energy=clip(Kp−1,-3,3)，K 为实际同 prompt 组大小（hard_gating=False，与 A1 一致）。
@@ -189,3 +189,17 @@ log_raw_data=True
 config/awr.py:sd3_pickscore（num_batches_per_epoch、gradient_accumulation_steps 默认值）
 scripts/launchers/run_a1_flowawr_sd3_pickscore_8gpu.sh（A1 启动器，A2.2 复用）
 本实验不修改任何代码文件",bash scripts/launchers/run_a1_flowawr_sd3_pickscore_8gpu.sh --config.sample.num_batches_per_epoch=64 --config.train.gradient_accumulation_steps=64 --config.run_name=flowawr_sd3_pickscore_accum4x,flowawr_sd3_pickscore_accum4x,待开始,1,
+A2.3,"FlowAWR，energy 裁剪区间 [−3, 3] 改为 [−0.5, 5]，其他与 A1 相同",main,PickScore（原始分数）,"与 A1 完全相同的训练，唯一改动：energy 的裁剪区间从 [−3, 3] 改为 [−0.5, 5]。temperature 仍为 1，不动任何其他参数。
+原公式 energy = clip(24p − 1, −3, 3)，24p − 1 的最小值是 −1，所以 −3 下界从未生效；+3 上界在 τ=1 下也几乎不生效（step 0 每组裁 0.09 个样本，ckpt-900 为 0）。改成 [−0.5, 5] 后：上界 5 仍然碰不到；下界 −0.5 会把低于 −0.5 的负能量抬到 −0.5，被抬起的样本占比随训练阶段变化，step 0 约 14%，ckpt-900 约 0.2%（能量尺度随训练缩小 3 倍）。
+效果方向：裁负侧使组内能量和由 0 变正（step 0 约 +0.46/组，后期趋近 0），正组和等于把预测向自己的样本拉近，是与 A2.1（负组和、推离自身样本）相反的偏置。探针估计这部分漂移在 step 0 占梯度范数 7%，后期约 1%；去均值后的梯度信噪比与 A1 相同（split-half 余弦 0.055 对 0.055），与 A1 梯度方向余弦 step 0 为 0.99、ckpt-900 为 1.00。
+因此预期差别集中在前约 100 步：Eval 可能略高于 A1、组内奖励 std 下降更快、KL 略高；之后下界基本不再命中，曲线应与 A1 趋同。如果想让负侧裁剪在整个训练中持续生效，需要把下界收紧到 −0.3（step 0 命中 32%、ckpt-900 命中 3.8%），那是另一组实验。
+实现：不改任何已有文件。energy_min/energy_max 是官方 PerPromptStatTracker 构造函数已有的参数（默认 ±3），官方配置和训练脚本没有设置它们。本次新建 config/awr_energy_clip.py（在 sd3_pickscore 基础上设 energy_min=−0.5、energy_max=5）和 scripts/train_awr_sd3_energy_clip.py（train_awr_sd3.py 的副本，唯一改动是构造 tracker 时传入这两个值），以及对应启动器。裁剪逻辑本身（flow_grpo/stat_tracking.py 第 75 行 np.clip）与官方一致、未改。","GPU：与 A1 同一集群、同一卡数、同一每轮样本数（1152 张，每轮 1 次更新）
+配置入口：config/awr_energy_clip.py:sd3_pickscore_eclip_m0p5_p5（= sd3_pickscore + energy_min=−0.5、energy_max=5）
+seed=42；fp16；lr=3e-4；KL 系数 1e-4；max_grad_norm=1；EMA=True；temperature=1；global_std=True；adv_clip_max=5
+训练/评估采样步数 10/40；guidance_scale=1.0；deterministic DPM2；timestep_fraction=0.99；num_inner_epochs=1
+log_raw_data=True（raw_data 里的 energy_before_clip 与 energy_used 可离线算出 −0.5 下界的命中率；日志标量 energy_clip_rate 按 |e| ≥ 2.99 统计，不反映该下界）
+每 10 轮评估/保存；至少跑到 300 轮（差别预期在前 100 步，300 轮足够看到是否趋同）
+基线：A1（同集群、同 seed、同采样器，prompt 顺序逐步一致，可做逐步残差）","config/awr_energy_clip.py（新建：sd3_pickscore + train.energy_min=−0.5 / train.energy_max=5）
+scripts/train_awr_sd3_energy_clip.py（新建：train_awr_sd3.py 副本，仅 tracker 构造处传入 energy_min/energy_max）
+scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh（新建：A1 启动器副本，换用上述脚本与配置）
+flow_grpo/stat_tracking.py 第 75 行（np.clip(energies_reranged, energy_min, energy_max)，与官方一致，未改）",bash scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh,flowawr_sd3_pickscore_eclip_m0.5_p5,待开始,2,
