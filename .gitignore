@@ -59,5 +59,8 @@ HPSv2/
 /dataset/ood/*.json
 !/dataset/ood/schema.json
 
-tensorboard_results/
+exp_results/
 FlowAWR_original/
+utp-job-submission/
+utp/
+arnold.yml

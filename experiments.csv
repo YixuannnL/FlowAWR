@@ -15,7 +15,7 @@ flow_grpo/stat_tracking.py
 flow_grpo/pickscore_logging.py
 flow_grpo/pickscore_scorer.py
 flow_grpo/rewards.py
-scripts/launchers/run_a1_flowawr_sd3_pickscore_8gpu.sh",bash scripts/launchers/run_a1_flowawr_sd3_pickscore_8gpu.sh,flowawr_sd3_pickscore,待开始,1,
+scripts/launchers/run_a1_flowawr_sd3_pickscore_8gpu.sh",bash scripts/launchers/run_a1_flowawr_sd3_pickscore_8gpu.sh,flowawr_sd3_pickscore,运行中,1,16 卡 H200，已到 step 690。复现成功：Eval 与官方 r01–r03 均值残差 −0.045±0.015 原始分（step≥100），在官方组间离散内；step 690 Eval 23.82，KL 0.11 与官方一致。作为同集群基线继续跑。
 P1,FlowAWR 梯度信噪比探针（checkpoint-900）,main,-,"离线梯度信噪比探针，不训练、不更新、不存 checkpoint。目的：在上训练之前，量化不同 advantage/energy 加权方案给出的梯度方向有多稳定，筛掉 Adam 下分辨不出的变体。
 原理：FlowAWR energy loss 在冻结 checkpoint 上（pred_x0_old 取当前预测 detach）样本 i 的梯度精确等于 energy_i×b_i，b_i=∇Σ_t mean((x0_pred−x0)²)/w_t 与加权方案无关；任何方案的整批梯度都是 Σ energy_i×b_i。
 GPU 端：用给定 LoRA 采 2 轮各 1152 张（48 组×24），算 PickScore，对每个样本在 9 个训练时间点上反向一次，LoRA 梯度用 count-sketch（随机符号哈希，K=65536）压缩保存；同时用训练原版 PerPromptStatTracker 的 energy 走训练 loss 原路反向一遍作精确校验（--exact_check）。
@@ -29,7 +29,7 @@ LoRA 来源：官方 FlowAWR 复现 r01 的 checkpoints/checkpoint-900/lora（PE
 反向：每样本 9 个训练时间点（timestep_fraction=0.99），每样本一次反向；--noise_seed=1234（所有方案共用同一噪声）；--loss_scale=1024（溢出自动按 8 倍缩小重试）
 sketch：--sketch_dim=65536，--sketch_seed=0；--exact_check=true
 显存与训练的 9 样本 micro-batch 相同；输出约 8 卡×150MB=1.2GB；预计总时长 10 到 20 分钟（含模型加载）
-不写入 --out_dir 以外任何位置",scripts/probe_grad_snr_sd3.py,LORA_PATH=<官方r01>/checkpoints/checkpoint-900/lora bash scripts/launchers/run_p1_grad_snr_ckpt900_8gpu.sh,flowawr_probe_ckpt900_8gpu,待开始,1,运行结束后把 probe_runs/flowawr_probe_ckpt900_8gpu/ 整个目录原样上传（含全部 npz 与 json）
+不写入 --out_dir 以外任何位置",scripts/probe_grad_snr_sd3.py,LORA_PATH=<官方r01>/checkpoints/checkpoint-900/lora bash scripts/launchers/run_p1_grad_snr_ckpt900_8gpu.sh,flowawr_probe_ckpt900_8gpu,已完成,1,16 卡，2 轮 2304 张 96 组，exact 校验余弦 0.999998，本地重跑与合作者 summary 一致。ckpt-900 上所有零和方案的 split-half 余弦都在噪声底（基线 −0.023±0.030，噪声底 −0.027）；两个真实 1152 批的梯度余弦 0.029；每样本梯度的共模占比 10.5%。单次更新梯度测不出可复现方向，加权形状无法改善。
 P2,FlowAWR 梯度信噪比探针（step 0 对照，基础模型）,main,-,同 P1，但 LoRA 为新初始化（等价于基础模型）。与 P1 对照可看各方案的信噪比随训练阶段的变化。,"GPU：8 张 H200（以 scripts/launchers 下合作者的 8 卡启动器为准）
 配置入口：config/awr.py:sd3_pickscore（8 卡：每卡 batch=9，每轮每卡 16 个 batch，每轮 1152 张）
 默认模型：stabilityai/stable-diffusion-3.5-medium；分辨率 512×512；LoRA r=32、alpha=64；fp16；seed=42
@@ -39,7 +39,7 @@ LoRA 来源：--lora_path 留空，使用新初始化 LoRA（B=0，等价于基�
 反向：每样本 9 个训练时间点（timestep_fraction=0.99），每样本一次反向；--noise_seed=1234（所有方案共用同一噪声）；--loss_scale=1024（溢出自动按 8 倍缩小重试）
 sketch：--sketch_dim=65536，--sketch_seed=0；--exact_check=true
 显存与训练的 9 样本 micro-batch 相同；输出约 8 卡×150MB=1.2GB；预计总时长 10 到 20 分钟（含模型加载）
-不写入 --out_dir 以外任何位置",scripts/probe_grad_snr_sd3.py,bash scripts/launchers/run_p2_grad_snr_step0_8gpu.sh,flowawr_probe_step0_8gpu,待开始,1,运行结束后把 probe_runs/flowawr_probe_step0_8gpu/ 整个目录原样上传（含全部 npz 与 json）
+不写入 --out_dir 以外任何位置",scripts/probe_grad_snr_sd3.py,bash scripts/launchers/run_p2_grad_snr_step0_8gpu.sh,flowawr_probe_step0_8gpu,已完成,1,16 卡，同 P1。step 0 基线 split-half 余弦 0.057±0.056，两个真实批梯度余弦 0.075，每组信号/噪声功率比 0.0012，推算单次更新梯度与真方向余弦约 0.23。17 个方案无一高于基线，τ 越小越差；τ=0.3 的 energy_std 1.09、裁剪 5.4%、组和 −5.1/组（与 A2.1 第 1 步实测一致）。同样本预算下组数与组大小无差别。结论：提高信噪比靠每次更新样本量，见 A2.2。
 A2.1,FlowAWR，softmax 前 advantage × c(c = 3.33)（通过 temperature=0.3 实现，代码零改动）,main,Pickscore（原始分数）,"与 A1（8 卡 H200、seed 42）完全相同的训练，唯一改动：组内 softmax 之前把 advantage 乘以 c = 3.33。
 实现方式是把配置项 train.temperature 从 1 改为 0.3。要说明的是：原代码里 temperature 只出现在 flow_grpo/stat_tracking.py 第 60 行 prompt_adv_clipped / self.temperature，紧接着就是 softmax，整个仓库再无别处使用它，所以""τ = 0.3""与""advantage × 3.33""产生逐位相同的 energy，这是同一个改动，不是两个。之所以用 temperature 而不是另加一行乘法，是为了不改任何代码文件。
 其余全部不变：reward = PickScore/26；advantage =（reward − 组内均值）/（全局 std + 1e-4）；裁剪 ±5（当前 advantage 只有 ±0.3，不触发）；p = softmax(advantage × 3.33)；energy = clip(24p − 1, −3, 3)；target_x0 = pred_x0_old + energy × (x0 − pred_x0_old)；逐样本归一化 MSE 加 KL 项。
@@ -56,8 +56,7 @@ log_raw_data=True（逐样本落盘 advantage_clipped、softmax_prob、energy_be
 scripts/train_awr_sd3.py 第 540 行（把 config.train.temperature 传入 tracker）
 config/base.py 第 99 行（默认值 1.0）
 scripts/launchers/run_a1_flowawr_sd3_pickscore_8gpu.sh（合作者的 A1 启动器，A2.1 复用）
-本实验不修改任何代码文件","RUN_NAME=flowawr_sd3_pickscore_tau0.3_c3.33 bash scripts/launchers/run_a1_flowawr_sd3_pickscore_8gpu.sh --config.train.temperature=0.3
-bash scripts/launchers/run_a1_flowawr_sd3_pickscore_8gpu.sh",flowawr_sd3_pickscore_tau0.3_c3.33,待开始,1,
+本实验不修改任何代码文件",bash scripts/launchers/run_a1_flowawr_sd3_pickscore_8gpu.sh --config.train.temperature=0.3 --config.run_name=flowawr_sd3_pickscore_tau0.3_c3.33,flowawr_sd3_pickscore_tau0.3_c3.33,已失败,1,FAIL。从 step 1 起发散：step 1 energy_std 1.03、裁剪 6.3%、正样本 26%，组和约 −5/组；KL 从 step 2 单调上升，step 29 old_deviate_max 跳到 44，Eval 从 19.8 掉到 step 70 的 16.75，之后塌缩（step 640 Eval 16.13、KL 83.7、x0_norm 71.6、组内奖励 std 0.0025）。原因：c=3.33 按 step 900 的 advantage 尺度校准，step 0 尺度是其 3 倍，等效 c≈10，负组和注入与奖励无关的共模漂移。建议停止。
 A1.2,FlowAWR 单奖励 baseline（SD3 + HPSv2.1）,main,HPSv2.1（eval_reward_hpsv2，评分器原始分数，无缩放）,"FlowAWR 单奖励 energy 分支，训练算法与 A1 相同，只换奖励与 prompt 集。
 advantage=(reward−组内均值)/(全局 reward 标准差+1e-4)，裁剪至[-5,5]，温度为 1；p=组内 softmax(advantage)。
 energy=clip(Kp−1,-3,3)，K 为实际同 prompt 组大小（hard_gating=False，与 A1 一致）。
@@ -176,3 +175,17 @@ flow_grpo/pickscore_logging.py（单奖励逐样本日志）
 config/awr.py 第 138 行（sd3_geneval 预设 hard_gating=True，本实验用命令行覆盖回 False）
 scripts/launchers/run_a1_6_flowawr_sd3_geneval_softk_8gpu.sh（由 A1.4 启动器派生，仅改保存目录、运行名并追加 --config.train.hard_gating=False）
 本实验不修改任何代码文件",bash scripts/launchers/run_a1_6_flowawr_sd3_geneval_softk_8gpu.sh,flowawr_sd3_geneval_softk,待开始,2,
+A2.2,FlowAWR，每次更新累积 4 倍样本（4608 张 / 192 组），代码零改动,main,PickScore（原始分数）,"与 A1 完全相同的训练，唯一改动：每次 optimizer 更新使用 4 倍样本。每轮采样 4608 张（192 组 × 24），全部累积后做 1 次更新；A1 是每轮 1152 张（48 组）1 次更新。
+实现只改两个配置项：sample.num_batches_per_epoch 和 train.gradient_accumulation_steps 同时乘 4。两者必须相等（代码里 num_batches = num_batches_per_epoch × train_batch_size / batch_size，累积步数 = gradient_accumulation_steps × 9 个时间点），每卡 micro-batch 仍是 9 张、一次一个时间点，反向和优化器状态不变，只多驻留约 1 到 2 GB 的采样数据。
+依据是探针 P1/P2：ckpt-900 上所有零和加权方案的 split-half 余弦都在噪声底（−0.023±0.030 对 −0.027），step 0 上基线也只有 0.057；两个真实 1152 批的梯度余弦 step 0 为 0.075、ckpt-900 为 0.029。按 P2 估出的每组信号/噪声功率比 0.0012 推算，单次更新梯度与真方向的余弦 48 组时约 0.23、192 组时约 0.43。17 个加权方案没有一个高于基线，组数与组大小在同样本预算下无差别，所以提高信噪比的变量是每次更新的样本量，不是加权形状。
+其余全部不变：temperature=1、global_std=True、adv_clip_max=5、energy 范围 [−3,3]、lr=3e-4、KL 系数 1e-4、β1=0.9、β2=0.999、max_grad_norm=1、EMA=True、seed=42。global std 改为在 4608 张上计算，与 1152 张上的值几乎相同，energy 统计预期与 A1 一致（energy_std 约 0.2、裁剪比例 0）。","GPU：与 A1 同一集群、同一卡数。每轮样本数 = 卡数 × 9 × num_batches_per_epoch，目标 4608：16 卡用 num_batches_per_epoch=32、gradient_accumulation_steps=32；8 卡用 64、64。两个参数必须相等
+配置入口：config/awr.py:sd3_pickscore，仅覆盖上述两个参数
+seed=42；fp16；lr=3e-4；KL 系数 1e-4；max_grad_norm=1；EMA=True；temperature=1
+训练/评估采样步数 10/40；guidance_scale=1.0；deterministic DPM2；timestep_fraction=0.99；num_inner_epochs=1
+log_raw_data=True
+评估/保存间隔保持每 10 次更新不改（即每 46080 张评估一次），比较时横轴用累计样本数
+每次更新约 4.3 分钟（16 卡：采样约 56 s、训练约 196 s）；至少跑 250 次更新（= A1 1000 轮的样本量，约 18 小时）
+基线：A1（同集群、同 seed、每次更新 1152 张）。两者采样器的 prompt 抽取顺序不同，不能逐步残差比较，按累计样本数对齐比较","scripts/train_awr_sd3.py 第 547 行（samples_per_epoch）、第 951 行（num_batches）、第 967 行（effective_grad_accum_steps）
+config/awr.py:sd3_pickscore（num_batches_per_epoch、gradient_accumulation_steps 默认值）
+scripts/launchers/run_a1_flowawr_sd3_pickscore_8gpu.sh（A1 启动器，A2.2 复用）
+本实验不修改任何代码文件",bash scripts/launchers/run_a1_flowawr_sd3_pickscore_8gpu.sh --config.sample.num_batches_per_epoch=64 --config.train.gradient_accumulation_steps=64 --config.run_name=flowawr_sd3_pickscore_accum4x,flowawr_sd3_pickscore_accum4x,待开始,1,
