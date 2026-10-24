@@ -9,7 +9,7 @@
   "source_repository": "git@github-new:YixuannnL/FlowAWR.git",
   "output_root": "/mnt/shared_storage/usr/kevinliu/flowawr/four-experiments-c3beaf6-20261022",
   "snapshot_start_utc": "2026-10-23T02:50:23.303999+00:00",
-  "snapshot_end_utc": "2026-10-23T02:52:13.603731+00:00",
+  "snapshot_end_utc": "2026-10-24T10:16:32.787805+00:00",
   "training": [
     {
       "experiment": "a1",
@@ -17,195 +17,203 @@
       "source": {
         "source": "/mnt/shared_storage/usr/kevinliu/flowawr/four-experiments-c3beaf6-20261022/training/flowawr_sd3_pickscore/2026.10.22_11.35.49/run-20261022_113552-p08kjijh/run-p08kjijh.swanlab",
         "relative": "training/flowawr_sd3_pickscore/2026.10.22_11.35.49/run-20261022_113552-p08kjijh/run-p08kjijh.swanlab",
-        "bytes": 27975389,
-        "sha256": "987a2d6e21dbf62db81c6c2c47c6b652e3fb326f67e0e095b329b9e89d4e319c",
-        "snapshot_utc": "2026-10-23T02:51:55.269006+00:00",
-        "source_mtime": 1792723915.237
+        "bytes": 85546571,
+        "sha256": "dab5855b77dcef8243c79304018c3b5dd6ebee5309a1c2dfe2ceae1973fc2072",
+        "snapshot_utc": "2026-10-24T10:16:32.787805+00:00",
+        "source_mtime": 1792836770.7510002
       },
       "scan": {
-        "source_bytes": 27975389,
-        "complete_prefix_bytes": 27975389,
+        "source_bytes": 85546571,
+        "complete_prefix_bytes": 85546571,
         "trailing_bytes": 0,
-        "complete_prefix_sha256": "987a2d6e21dbf62db81c6c2c47c6b652e3fb326f67e0e095b329b9e89d4e319c"
+        "complete_prefix_sha256": "dab5855b77dcef8243c79304018c3b5dd6ebee5309a1c2dfe2ceae1973fc2072"
       },
       "record_types": {
         "start": 1,
         "save": 4,
-        "log": 11299,
+        "log": 34543,
         "column": 96,
-        "scalar": 322481,
-        "media": 140
+        "scalar": 985337,
+        "media": 426
       },
       "scalar_tags": 94,
-      "scalar_points": 322481,
+      "scalar_points": 985337,
       "all_scalar_values_exact": true,
       "output": "runs/pickscore/flowawr_sd3_pickscore__2026.10.22_11.35.49/events.out.tfevents.swanlab-scalars.0000",
-      "output_sha256": "3b843552d7804e698d88935cbb76cdd0b02711f173861540282f960e0c031a5f",
+      "output_sha256": "153fd25c0c7113d126ee15f5318989d01077cc51263719b35e80c83153913e9d",
       "audit": {
         "ranks": [
           {
             "rank": 0,
-            "scheduled_updates": 691,
-            "executed_updates": 691,
-            "last_epoch": 690,
+            "scheduled_updates": 2125,
+            "executed_updates": 2125,
+            "last_epoch": 2124,
             "tail_bytes": 0,
             "amp_skips": 0,
             "skipped_global_steps": []
           },
           {
             "rank": 1,
-            "scheduled_updates": 691,
-            "executed_updates": 691,
-            "last_epoch": 690,
+            "scheduled_updates": 2125,
+            "executed_updates": 2125,
+            "last_epoch": 2124,
             "tail_bytes": 0,
             "amp_skips": 0,
             "skipped_global_steps": []
           },
           {
             "rank": 2,
-            "scheduled_updates": 691,
-            "executed_updates": 691,
-            "last_epoch": 690,
+            "scheduled_updates": 2125,
+            "executed_updates": 2125,
+            "last_epoch": 2124,
             "tail_bytes": 0,
             "amp_skips": 0,
             "skipped_global_steps": []
           },
           {
             "rank": 3,
-            "scheduled_updates": 691,
-            "executed_updates": 691,
-            "last_epoch": 690,
+            "scheduled_updates": 2125,
+            "executed_updates": 2125,
+            "last_epoch": 2124,
             "tail_bytes": 0,
             "amp_skips": 0,
             "skipped_global_steps": []
           },
           {
             "rank": 4,
-            "scheduled_updates": 691,
-            "executed_updates": 691,
-            "last_epoch": 690,
+            "scheduled_updates": 2125,
+            "executed_updates": 2125,
+            "last_epoch": 2124,
             "tail_bytes": 0,
             "amp_skips": 0,
             "skipped_global_steps": []
           },
           {
             "rank": 5,
-            "scheduled_updates": 691,
-            "executed_updates": 691,
-            "last_epoch": 690,
+            "scheduled_updates": 2125,
+            "executed_updates": 2125,
+            "last_epoch": 2124,
             "tail_bytes": 0,
             "amp_skips": 0,
             "skipped_global_steps": []
           },
           {
             "rank": 6,
-            "scheduled_updates": 691,
-            "executed_updates": 691,
-            "last_epoch": 690,
+            "scheduled_updates": 2125,
+            "executed_updates": 2125,
+            "last_epoch": 2124,
             "tail_bytes": 0,
             "amp_skips": 0,
             "skipped_global_steps": []
           },
           {
             "rank": 7,
-            "scheduled_updates": 691,
-            "executed_updates": 691,
-            "last_epoch": 690,
+            "scheduled_updates": 2125,
+            "executed_updates": 2125,
+            "last_epoch": 2124,
             "tail_bytes": 0,
             "amp_skips": 0,
             "skipped_global_steps": []
           },
           {
             "rank": 8,
-            "scheduled_updates": 691,
-            "executed_updates": 691,
-            "last_epoch": 690,
+            "scheduled_updates": 2126,
+            "executed_updates": 2126,
+            "last_epoch": 2125,
             "tail_bytes": 0,
             "amp_skips": 0,
             "skipped_global_steps": []
           },
           {
             "rank": 9,
-            "scheduled_updates": 691,
-            "executed_updates": 691,
-            "last_epoch": 690,
+            "scheduled_updates": 2126,
+            "executed_updates": 2126,
+            "last_epoch": 2125,
             "tail_bytes": 0,
             "amp_skips": 0,
             "skipped_global_steps": []
           },
           {
             "rank": 10,
-            "scheduled_updates": 691,
-            "executed_updates": 691,
-            "last_epoch": 690,
+            "scheduled_updates": 2126,
+            "executed_updates": 2126,
+            "last_epoch": 2125,
             "tail_bytes": 0,
             "amp_skips": 0,
             "skipped_global_steps": []
           },
           {
             "rank": 11,
-            "scheduled_updates": 691,
-            "executed_updates": 691,
-            "last_epoch": 690,
+            "scheduled_updates": 2126,
+            "executed_updates": 2126,
+            "last_epoch": 2125,
             "tail_bytes": 0,
             "amp_skips": 0,
             "skipped_global_steps": []
           },
           {
             "rank": 12,
-            "scheduled_updates": 691,
-            "executed_updates": 691,
-            "last_epoch": 690,
+            "scheduled_updates": 2126,
+            "executed_updates": 2126,
+            "last_epoch": 2125,
             "tail_bytes": 0,
             "amp_skips": 0,
             "skipped_global_steps": []
           },
           {
             "rank": 13,
-            "scheduled_updates": 691,
-            "executed_updates": 691,
-            "last_epoch": 690,
+            "scheduled_updates": 2126,
+            "executed_updates": 2126,
+            "last_epoch": 2125,
             "tail_bytes": 0,
             "amp_skips": 0,
             "skipped_global_steps": []
           },
           {
             "rank": 14,
-            "scheduled_updates": 691,
-            "executed_updates": 691,
-            "last_epoch": 690,
+            "scheduled_updates": 2126,
+            "executed_updates": 2126,
+            "last_epoch": 2125,
             "tail_bytes": 0,
             "amp_skips": 0,
             "skipped_global_steps": []
           },
           {
             "rank": 15,
-            "scheduled_updates": 691,
-            "executed_updates": 691,
-            "last_epoch": 690,
+            "scheduled_updates": 2126,
+            "executed_updates": 2126,
+            "last_epoch": 2125,
             "tail_bytes": 0,
             "amp_skips": 0,
             "skipped_global_steps": []
           }
         ],
-        "scheduled_updates_min": 691,
-        "scheduled_updates_max": 691,
-        "executed_updates_min": 691,
-        "executed_updates_max": 691,
+        "scheduled_updates_min": 2125,
+        "scheduled_updates_max": 2126,
+        "executed_updates_min": 2125,
+        "executed_updates_max": 2126,
         "amp_skips": 0,
         "skipped_global_steps": [],
-        "samples_per_round": 1152
+        "samples_per_round": 1152,
+        "snapshot_start_utc": "2026-10-24T10:12:31.388809+00:00",
+        "snapshot_end_utc": "2026-10-24T10:16:32.787805+00:00",
+        "source_manifest": "data/a1/SNAPSHOT.json"
       },
       "latest_train": {
-        "step": 690,
-        "wall_time": 1792723858.655051,
-        "value": 0.908046305179596
+        "tag": "reward_avg",
+        "step": 2125,
+        "wall_time": 1792836709.265423,
+        "value": 0.9336232542991638
       },
       "latest_eval": {
-        "step": 690,
-        "wall_time": 1792723831.706662,
-        "value": 0.916087806224823
-      }
+        "tag": "eval_reward_pickscore",
+        "step": 2120,
+        "wall_time": 1792836345.559937,
+        "value": 0.9252116680145264
+      },
+      "snapshot_start_utc": "2026-10-24T10:12:31.388809+00:00",
+      "snapshot_end_utc": "2026-10-24T10:16:32.787805+00:00",
+      "verification_receipt": "data/a1/SNAPSHOT.json"
     },
     {
       "experiment": "a21",
@@ -557,5 +565,18 @@
     "source_scalar_values_step_and_tags_preserved": true,
     "exact_timestamp_storage": "data/<experiment>/scalars.jsonl.gz: integer seconds and nanoseconds",
     "probe_view": "Derived static CPU analysis at step 0, not a training curve"
-  }
+  },
+  "snapshot_scope_note": "Composite result set: A1 refreshed from the 2026-10-24 capture; P1, P2 and A2.1 retain their 2026-10-23 captures. Per-experiment/source timestamps are authoritative; no live status refresh was performed.",
+  "refresh_history": [
+    {
+      "experiment": "a1",
+      "previous_results_commit": "624371a6b03e50d34fddc406ec0bf257ec0ff68c",
+      "snapshot_start_utc": "2026-10-24T10:12:31.388809+00:00",
+      "snapshot_end_utc": "2026-10-24T10:16:32.787805+00:00",
+      "local_export_completed_at_utc": "2026-10-24T10:21:39.822300+00:00",
+      "previous_scalar_points": 322481,
+      "scalar_points": 985337,
+      "previous_scalar_records_exact_prefix": true
+    }
+  ]
 }

@@ -1,0 +1,229 @@
+{
+  "schema_version": 1,
+  "experiment": "A1",
+  "run_key": "flowawr_sd3_pickscore__2026.10.22_11.35.49",
+  "source_commit": "c3beaf68c69d24c38391801e610a4400bece1c14",
+  "cluster": "general-aws-usw2-prod-0",
+  "namespace": "b-core-cn-prod",
+  "pod_at_capture": "kevinliu-fawr-a1-261022-c3beaf6-workers-0-0-0-8cgfs",
+  "source_root": "/mnt/shared_storage/usr/kevinliu/flowawr/four-experiments-c3beaf6-20261022/training/flowawr_sd3_pickscore/2026.10.22_11.35.49",
+  "snapshot_start_utc": "2026-10-24T10:12:31.388809+00:00",
+  "snapshot_end_utc": "2026-10-24T10:16:32.787805+00:00",
+  "exported_at_utc": "2026-10-24T10:17:36.165089+00:00",
+  "source_files": [
+    {
+      "source": "/mnt/shared_storage/usr/kevinliu/flowawr/four-experiments-c3beaf6-20261022/training/flowawr_sd3_pickscore/2026.10.22_11.35.49/run-20261022_113552-p08kjijh/run-p08kjijh.swanlab",
+      "relative": "run-20261022_113552-p08kjijh/run-p08kjijh.swanlab",
+      "bytes": 85546571,
+      "source_bytes_at_start": 85546571,
+      "source_mtime_ns": 1792836770751000000,
+      "device": 1048712,
+      "inode": 11560801179909235852,
+      "sha256": "dab5855b77dcef8243c79304018c3b5dd6ebee5309a1c2dfe2ceae1973fc2072",
+      "source_bytes_after_read": 85661500
+    },
+    {
+      "source": "/mnt/shared_storage/usr/kevinliu/flowawr/four-experiments-c3beaf6-20261022/training/flowawr_sd3_pickscore/2026.10.22_11.35.49/raw_data/20261022_113549_023750/rank-00000/updates.jsonl",
+      "relative": "raw_data/20261022_113549_023750/rank-00000/updates.jsonl",
+      "bytes": 631298,
+      "source_bytes_at_start": 631298,
+      "source_mtime_ns": 1792836692501000000,
+      "sha256": "a0aa5ca9abb879caa98f4f2d0cc2cbd72765f5fa7fdd1db4d6777e09c03599d5"
+    },
+    {
+      "source": "/mnt/shared_storage/usr/kevinliu/flowawr/four-experiments-c3beaf6-20261022/training/flowawr_sd3_pickscore/2026.10.22_11.35.49/raw_data/20261022_113549_023750/rank-00001/updates.jsonl",
+      "relative": "raw_data/20261022_113549_023750/rank-00001/updates.jsonl",
+      "bytes": 631298,
+      "source_bytes_at_start": 631298,
+      "source_mtime_ns": 1792836692582000000,
+      "sha256": "3ecba99f2799be276e2abb098f6f3e61f2e29a392a5befb02b25c401ad48b08d"
+    },
+    {
+      "source": "/mnt/shared_storage/usr/kevinliu/flowawr/four-experiments-c3beaf6-20261022/training/flowawr_sd3_pickscore/2026.10.22_11.35.49/raw_data/20261022_113549_023750/rank-00002/updates.jsonl",
+      "relative": "raw_data/20261022_113549_023750/rank-00002/updates.jsonl",
+      "bytes": 631298,
+      "source_bytes_at_start": 631298,
+      "source_mtime_ns": 1792836692583000000,
+      "sha256": "8bb4afbc8f59e47ccd73d437249f25542a5a855779281e0cf59fabee67c0b15a"
+    },
+    {
+      "source": "/mnt/shared_storage/usr/kevinliu/flowawr/four-experiments-c3beaf6-20261022/training/flowawr_sd3_pickscore/2026.10.22_11.35.49/raw_data/20261022_113549_023750/rank-00003/updates.jsonl",
+      "relative": "raw_data/20261022_113549_023750/rank-00003/updates.jsonl",
+      "bytes": 631298,
+      "source_bytes_at_start": 631298,
+      "source_mtime_ns": 1792836692501000000,
+      "sha256": "d12a4181f09c7a5d7d23aae5c18ddbda0166fafa3645d950522ec4404bee4549"
+    },
+    {
+      "source": "/mnt/shared_storage/usr/kevinliu/flowawr/four-experiments-c3beaf6-20261022/training/flowawr_sd3_pickscore/2026.10.22_11.35.49/raw_data/20261022_113549_023750/rank-00004/updates.jsonl",
+      "relative": "raw_data/20261022_113549_023750/rank-00004/updates.jsonl",
+      "bytes": 631298,
+      "source_bytes_at_start": 631298,
+      "source_mtime_ns": 1792836692517000000,
+      "sha256": "6b00a8ec099c250329f9faf10fbf7237cbc3bbd2a5803adcadfbf7c7a574ac20"
+    },
+    {
+      "source": "/mnt/shared_storage/usr/kevinliu/flowawr/four-experiments-c3beaf6-20261022/training/flowawr_sd3_pickscore/2026.10.22_11.35.49/raw_data/20261022_113549_023750/rank-00005/updates.jsonl",
+      "relative": "raw_data/20261022_113549_023750/rank-00005/updates.jsonl",
+      "bytes": 631298,
+      "source_bytes_at_start": 631298,
+      "source_mtime_ns": 1792836692525000000,
+      "sha256": "f7ced534d8a0661f2d29ca332f2e84eceb106fb1103e4c3cbde811fdae54a045"
+    },
+    {
+      "source": "/mnt/shared_storage/usr/kevinliu/flowawr/four-experiments-c3beaf6-20261022/training/flowawr_sd3_pickscore/2026.10.22_11.35.49/raw_data/20261022_113549_023750/rank-00006/updates.jsonl",
+      "relative": "raw_data/20261022_113549_023750/rank-00006/updates.jsonl",
+      "bytes": 631298,
+      "source_bytes_at_start": 631298,
+      "source_mtime_ns": 1792836692521000000,
+      "sha256": "f1b2019936e60013444521374b5648478a22faea661a62b30088b5bc05f09439"
+    },
+    {
+      "source": "/mnt/shared_storage/usr/kevinliu/flowawr/four-experiments-c3beaf6-20261022/training/flowawr_sd3_pickscore/2026.10.22_11.35.49/raw_data/20261022_113549_023750/rank-00007/updates.jsonl",
+      "relative": "raw_data/20261022_113549_023750/rank-00007/updates.jsonl",
+      "bytes": 631298,
+      "source_bytes_at_start": 631298,
+      "source_mtime_ns": 1792836692577000000,
+      "sha256": "290c534e475c95be1ed7b199442b9c26a11b82a562bb215dbcd6d103093e0cf7"
+    },
+    {
+      "source": "/mnt/shared_storage/usr/kevinliu/flowawr/four-experiments-c3beaf6-20261022/training/flowawr_sd3_pickscore/2026.10.22_11.35.49/raw_data/20261022_113549_023750/rank-00008/updates.jsonl",
+      "relative": "raw_data/20261022_113549_023750/rank-00008/updates.jsonl",
+      "bytes": 631597,
+      "source_bytes_at_start": 631597,
+      "source_mtime_ns": 1792836759800000000,
+      "sha256": "ccceb9c6b63dc8b708ed1df6f789337202e88359a05e3b1bea42de51446e2996"
+    },
+    {
+      "source": "/mnt/shared_storage/usr/kevinliu/flowawr/four-experiments-c3beaf6-20261022/training/flowawr_sd3_pickscore/2026.10.22_11.35.49/raw_data/20261022_113549_023750/rank-00009/updates.jsonl",
+      "relative": "raw_data/20261022_113549_023750/rank-00009/updates.jsonl",
+      "bytes": 631597,
+      "source_bytes_at_start": 631597,
+      "source_mtime_ns": 1792836759739000000,
+      "sha256": "c801529890fd2d091295c74e1e9d83bce5e70012da94fd84d9b8710899c9b94a"
+    },
+    {
+      "source": "/mnt/shared_storage/usr/kevinliu/flowawr/four-experiments-c3beaf6-20261022/training/flowawr_sd3_pickscore/2026.10.22_11.35.49/raw_data/20261022_113549_023750/rank-00010/updates.jsonl",
+      "relative": "raw_data/20261022_113549_023750/rank-00010/updates.jsonl",
+      "bytes": 633723,
+      "source_bytes_at_start": 633723,
+      "source_mtime_ns": 1792836759807000000,
+      "sha256": "2870db442fd0fcc47de58f67750a7c6a3f4da78a6f98fd94d8d9d6abc0c5d206"
+    },
+    {
+      "source": "/mnt/shared_storage/usr/kevinliu/flowawr/four-experiments-c3beaf6-20261022/training/flowawr_sd3_pickscore/2026.10.22_11.35.49/raw_data/20261022_113549_023750/rank-00011/updates.jsonl",
+      "relative": "raw_data/20261022_113549_023750/rank-00011/updates.jsonl",
+      "bytes": 633723,
+      "source_bytes_at_start": 633723,
+      "source_mtime_ns": 1792836759738000000,
+      "sha256": "05de985e5eb765b7c1fdbd737cd28221144bd7023645c3be0005a3d556f771d6"
+    },
+    {
+      "source": "/mnt/shared_storage/usr/kevinliu/flowawr/four-experiments-c3beaf6-20261022/training/flowawr_sd3_pickscore/2026.10.22_11.35.49/raw_data/20261022_113549_023750/rank-00012/updates.jsonl",
+      "relative": "raw_data/20261022_113549_023750/rank-00012/updates.jsonl",
+      "bytes": 633723,
+      "source_bytes_at_start": 633723,
+      "source_mtime_ns": 1792836759806000000,
+      "sha256": "1386ece0dfde1332a55611fb392cd64fd0934593845840b02e638886a484fda3"
+    },
+    {
+      "source": "/mnt/shared_storage/usr/kevinliu/flowawr/four-experiments-c3beaf6-20261022/training/flowawr_sd3_pickscore/2026.10.22_11.35.49/raw_data/20261022_113549_023750/rank-00013/updates.jsonl",
+      "relative": "raw_data/20261022_113549_023750/rank-00013/updates.jsonl",
+      "bytes": 633723,
+      "source_bytes_at_start": 633723,
+      "source_mtime_ns": 1792836759726000000,
+      "sha256": "a2112f0977838559eb6fe0f2d014621b257c927b0b83ea1a2973b554d612323e"
+    },
+    {
+      "source": "/mnt/shared_storage/usr/kevinliu/flowawr/four-experiments-c3beaf6-20261022/training/flowawr_sd3_pickscore/2026.10.22_11.35.49/raw_data/20261022_113549_023750/rank-00014/updates.jsonl",
+      "relative": "raw_data/20261022_113549_023750/rank-00014/updates.jsonl",
+      "bytes": 633723,
+      "source_bytes_at_start": 633723,
+      "source_mtime_ns": 1792836759725000000,
+      "sha256": "2030225122f395c95fa9f8de1dea071f0832110c0f3952fb87c2cbdd98eb34b6"
+    },
+    {
+      "source": "/mnt/shared_storage/usr/kevinliu/flowawr/four-experiments-c3beaf6-20261022/training/flowawr_sd3_pickscore/2026.10.22_11.35.49/raw_data/20261022_113549_023750/rank-00015/updates.jsonl",
+      "relative": "raw_data/20261022_113549_023750/rank-00015/updates.jsonl",
+      "bytes": 633723,
+      "source_bytes_at_start": 633723,
+      "source_mtime_ns": 1792836759740000000,
+      "sha256": "3b973913940f796d839fe4fc111695bf1c0b55f7fdcee94f03f79e678d8382e4"
+    }
+  ],
+  "source_format": "SwanLab 0.9.0 LevelDB log v2",
+  "tensorboard_format": "DT_DOUBLE tensor scalars with scalars plugin metadata",
+  "converter_versions": {
+    "swanlab": "0.9.0",
+    "tensorboard": "2.21.0"
+  },
+  "scalar_points": 985337,
+  "scalar_tags": 94,
+  "latest_train": {
+    "tag": "reward_avg",
+    "step": 2125,
+    "value": 0.9336232542991638,
+    "timestamp_seconds": 1792836709,
+    "timestamp_nanos": 265423000
+  },
+  "latest_eval": {
+    "tag": "eval_reward_pickscore",
+    "step": 2120,
+    "value": 0.9252116680145264,
+    "timestamp_seconds": 1792836345,
+    "timestamp_nanos": 559937000
+  },
+  "source_framing_verification": {
+    "source_bytes": 85546571,
+    "complete_logical_records": 1020407,
+    "complete_record_boundary_bytes": 85546571,
+    "trailing_bytes": 0,
+    "trailing_reason": null,
+    "trailing_sha256": null,
+    "incomplete_record_discarded": false,
+    "complete_physical_chunks_crc_verified": 1022816,
+    "physical_chunk_type_counts": {
+      "1": 1017998,
+      "2": 2409,
+      "4": 2409
+    },
+    "physical_scan_end_bytes": 85546571
+  },
+  "tensorboard_readback_verification": {
+    "all_physical_record_crcs_valid": true,
+    "physical_records": 985338,
+    "scalar_events": 985337,
+    "all_tags_steps_values_and_wall_times_match_jsonl": true,
+    "all_scalar_values_are_dt_double": true
+  },
+  "previous_published_scalar_records_exact_prefix": 322481,
+  "full_local_verification_sha256": "d161796acbf7e730e7ca86ce59ec9f93159708dbb038a9f5ec7c6ee98df96740",
+  "files": [
+    {
+      "path": "runs/pickscore/flowawr_sd3_pickscore__2026.10.22_11.35.49/events.out.tfevents.swanlab-scalars.0000",
+      "bytes": 82538239,
+      "sha256": "153fd25c0c7113d126ee15f5318989d01077cc51263719b35e80c83153913e9d"
+    },
+    {
+      "path": "data/a1/config.json",
+      "bytes": 1944,
+      "sha256": "590c3115b030853a2faf1aab84c4b5cdfbd1b65a3a577f2e0c2001a5824ac120"
+    },
+    {
+      "path": "data/a1/scalar_inventory.tsv",
+      "bytes": 4238,
+      "sha256": "168e3216089e5f3202790ba7f70bddd49c4559be2c6b9f31c438c991421e4e7d"
+    },
+    {
+      "path": "data/a1/scalars.jsonl.gz",
+      "bytes": 7043852,
+      "sha256": "06e792acd125d76853ca8353a67f83afea2dcd03a1a12a329b972627ab746e3e"
+    },
+    {
+      "path": "data/a1/update_audit.json",
+      "bytes": 3581,
+      "sha256": "dc682d1ccc6b9de7e1254f1696c462b7cb4abd3c59768b41522f13b5729e6e82"
+    }
+  ],
+  "note": "Paths in files are repository-relative. Raw training sample payloads remain on the source storage; source_files contains provenance metadata only. This upload uses the stated historical local capture, not a new live query."
+}
