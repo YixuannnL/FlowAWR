@@ -203,3 +203,24 @@ log_raw_data=True（raw_data 里的 energy_before_clip 与 energy_used 可离线
 scripts/train_awr_sd3_energy_clip.py（新建：train_awr_sd3.py 副本，仅 tracker 构造处传入 energy_min/energy_max）
 scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh（新建：A1 启动器副本，换用上述脚本与配置）
 flow_grpo/stat_tracking.py 第 75 行（np.clip(energies_reranged, energy_min, energy_max)，与官方一致，未改）",bash scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh,flowawr_sd3_pickscore_eclip_m0.5_p5,待开始,2,
+A3.1,FlowAWR + rarity（SD3 + PickScore，逐样本 log）,main,PickScore（原始分数）,"在 A1 的 FlowAWR 单 PickScore energy 分支上加入 docs/rarity.tex 的 rarity 调制；使用独立核心文件副本，原始文件保留。
+沿用 reward=PickScore/26、全局 reward std+1e-4、组内中心化、advantage 裁剪[-5,5]及温度1；w=K×softmax(advantage)，delta=w−1，先保留未裁剪的 delta。
+特征为同一次 PickScore 前向得到的固定、L2 归一化图像 embedding；在同 prompt 组内做 Gaussian leave-one-out KDE，排除自身，使用全部样本且不按 reward 筛选；s=max(1−p_hat/mean(p_hat),0)。
+先调制 b_raw=delta+s×abs(delta)，再裁剪 b=clip(b_raw,-3,3)；正 delta 乘(1+s)，负 delta 乘(1−s)，不额外归一化或强制组和为零。
+target_x0=pred_x0_old+b×(x0−pred_x0_old)；原 loss、KL、采样、optimizer、梯度裁剪及 EMA 保持一致。按本轮所有 rank 解码后的 prompt 分组，重复 prompt 沿用原逻辑合并，K取实际组大小。","GPU：默认 8 卡；正式对照需与 A1 匹配 GPU 型号、卡数及采样/梯度累积布局。现有 A1 raw 为16卡，不能与默认8卡声称逐步 prompt/noise 一致。
+配置入口：config/awr_rarity.py:sd3_pickscore；模型 stabilityai/stable-diffusion-3.5-medium；分辨率512×512；LoRA r=32、alpha=64。
+lr=3e-4；seed=42；fp16；KL系数=1e-4；max_grad_norm=1；EMA=True；decay_type=1。
+默认8卡：每卡采样/训练 batch=9；rollout batches=16；梯度累积=16；每 epoch 48组×24图=1152图；inner_epochs=1；每 epoch 1次 optimizer 更新。
+若按16卡A1对照：使用同一16卡分布式启动布局，并将 sample.num_batches_per_epoch=8、train.gradient_accumulation_steps=8，保持每轮1152图。
+训练/评估采样步数=10/40；guidance_scale=1.0；训练 deterministic DPM2；noise_level=0.7；timestep_fraction=0.99，每样本训练9个时间点。
+global_std=True；adv_clip_max=5；temperature=1；energy_mode=True；hard_gating=False；filter_zero_advantage=False；gdpo=False。
+rarity.enabled=True；feature_type=pickscore_normalized；bandwidth=0.14，训练全程固定；epsilon_minus=3；epsilon_plus=3。
+h由独立初始模型探针首轮确定：h=sqrt(median_g(median_{i<j}(||z_i−z_j||²))/2)≈0.1352，取两位有效数字0.14；第二轮只验证，不参与选值；不使用奖励选择带宽。
+log_raw_data=True；每个样本写入 weights.jsonl，保留原日志，并新增 rarity_score、rarity_log_density、rarity_density_ratio、rarity_group_size、rarity_energy_before_clip；带 sample_id，不跨样本平均。
+每10 epoch评估/保存（含epoch 0）；num_epochs默认100000，实际结束点待定。","config/awr_rarity.py
+scripts/train_awr_sd3_rarity.py
+flow_grpo/stat_tracking_rarity.py
+flow_grpo/pickscore_scorer_rarity.py
+flow_grpo/rewards_rarity.py
+flow_grpo/pickscore_logging.py（复用原逐样本日志）
+scripts/launchers/run_flowawr_sd3_pickscore_rarity_8gpu.sh",bash scripts/launchers/run_flowawr_sd3_pickscore_rarity_8gpu.sh,flowawr_sd3_pickscore_rarity,待运行,,正式训练待运行。带宽探针已完成：8张H200，2轮×1152张，无参数更新；首轮h≈0.1352，验证轮参考尺度≈0.1332。采用固定h=0.14，属于初始特征距离尺度校准，未验证训练收益。结果：exp_results/rarity_bandwidth_probe/20261024-r2/probe/analysis/recommendation.json；取整诊断：exp_results/rarity_bandwidth_probe/20261024-r2/bandwidth_rounding.json。
