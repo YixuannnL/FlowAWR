@@ -63,4 +63,7 @@ exp_results/
 FlowAWR_original/
 utp-job-submission/
 utp/
+docs/
+analyse_code/
 arnold.yml
+experiments_past.csv
