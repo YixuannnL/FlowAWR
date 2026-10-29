@@ -49,7 +49,7 @@ export HUGGINGFACE_HUB_CACHE="${HUGGINGFACE_HUB_CACHE:-${HF_HOME}/hub}"
 export TRANSFORMERS_CACHE="${TRANSFORMERS_CACHE:-${HF_HOME}/transformers}"
 export DIFFUSERS_CACHE="${DIFFUSERS_CACHE:-${HF_HOME}/diffusers}"
 
-echo "FlowAWR: 8 GPUs, SD3.5-Medium + PickScore, negative clip cosine -0.5 to -0.4 (steps 800-1200), upper +5"
+echo "FlowAWR: 8 GPUs, SD3.5-Medium + PickScore, cosine energy clip (effective parameters logged by trainer)"
 echo "model=${SD3_MODEL}"
 echo "save_dir=${SAVE_DIR}/${RUN_NAME}/<timestamp>"
 

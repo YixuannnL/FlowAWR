@@ -16,4 +16,6 @@ def sd3_pickscore_offset_norm():
     config = awr.sd3_pickscore()
     config.run_name = "flowawr_sd3_pickscore_offset_norm"
     config.save_dir = os.path.join(config.logdir, "sd3", "pickscore_offset_norm")
+    config.train.energy_min = -3.0
+    config.train.energy_max = 3.0
     return config

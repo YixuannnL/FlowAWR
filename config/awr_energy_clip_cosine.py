@@ -1,7 +1,10 @@
 """A2.3-derived config with a deterministic negative energy clipping schedule.
 
-Use scripts/train_awr_sd3_energy_clip_cosine.py. Hold -0.5 through step 800,
+Use scripts/train_awr_sd3_energy_clip_cosine.py. Defaults: -0.5 through step 800,
 cosine to -0.4 at step 1200, then hold -0.4. The positive bound stays +5.
+Override train.energy_min, train.energy_min_final, train.energy_max,
+train.energy_min_cosine_start_step and train.energy_min_cosine_end_step
+via --config.train.<field>=<value>; set --config.run_name for each experiment.
 All sampler, reward, optimizer and model settings come from the A2.3 config.
 """
 

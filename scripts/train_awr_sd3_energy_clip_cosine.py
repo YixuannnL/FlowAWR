@@ -201,15 +201,15 @@ def return_decay(step, decay_type):
 
 
 def cosine_energy_min(global_step, initial_min=-0.5, final_min=-0.4, start_step=800, end_step=1200):
-    """Hold, cosine-tighten, then hold the negative energy bound.
+    """Hold, cosine-interpolate in either direction, then hold the negative bound.
 
     Uses only the logged global step, including its checkpoint-restored value.
     Increasing the negative bound toward zero means stronger clipping.
     """
     if not all(math.isfinite(value) for value in (initial_min, final_min)):
         raise ValueError("Energy bounds must be finite")
-    if not initial_min <= final_min < 0:
-        raise ValueError("Expected initial_min <= final_min < 0")
+    if not (initial_min < 0 and final_min < 0):
+        raise ValueError("Expected initial_min < 0 and final_min < 0")
     for name, value in (("start_step", start_step), ("end_step", end_step)):
         if isinstance(value, bool) or not isinstance(value, Integral):
             raise ValueError(f"{name} must be an integer")
@@ -439,6 +439,7 @@ def main(_):
 
     # --- WandB Init (only on main process) ---
     if is_main_process(rank):
+        logger.info("Cosine energy clip: lower=%s; upper=%s", energy_min_schedule, config.train.energy_max)
         #log_dir = os.path.join(config.logdir, config.run_name)
         log_dir = config.save_dir
         os.makedirs(log_dir, exist_ok=True)

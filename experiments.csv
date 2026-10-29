@@ -1,25 +1,8 @@
 标识号码,状态,说明,代码版本,评估指标,方法说明,配置（按实际条件修改）,对应核心代码,启动脚本,保存名称,结果说明
-A1,已停止,FlowAWR 复现（SD3 + PickScore，逐样本 log）,main,PickScore（原始分数）,"复现 FlowAWR 单 PickScore energy 分支，训练算法保持不变，增加逐样本日志。
-reward=PickScore/26；advantage=(reward−组内均值)/(全局 reward 标准差+1e-4)，裁剪至[-5,5]，温度为1。
-p=组内 softmax(advantage)，energy=clip(Kp−1,-3,3)，K为实际同 prompt 组大小。
-target_x0=pred_x0_old+energy×(x0−pred_x0_old)，使用原逐样本归一化 MSE，并加参考模型 KL 项。","GPU：16 张 NVIDIA RTX PRO 6000 Blackwell Server Edition（2 节点×8 卡）
-配置入口：config/awr.py:sd3_pickscore
-默认模型：stabilityai/stable-diffusion-3.5-medium；分辨率512×512；LoRA r=32、alpha=64
-lr=3e-4；seed=42；fp16；KL系数=1e-4；max_grad_norm=1；EMA=True
-每 epoch 48组×24图=1152图；每卡采样/训练 batch=9；rollout batches=16；梯度累积=16；inner_epochs=1
-训练/评估采样步数=10/40；guidance_scale=1.0；训练 deterministic DPM2
-timestep_fraction=0.99，每样本训练9个时间点；每 epoch 1次 optimizer 更新
-global_std=True；adv_clip_max=5；temperature=1；energy范围=[-3,3]；hard_gating=False；filter_zero_advantage=False
-log_raw_data=True；每10 epoch评估/保存（含epoch 0）；num_epochs默认上限100000，实际结束点待定","scripts/train_awr_sd3.py
-flow_grpo/stat_tracking.py
-flow_grpo/pickscore_logging.py
-flow_grpo/pickscore_scorer.py
-flow_grpo/rewards.py
-scripts/launchers/run_a1_flowawr_sd3_pickscore_8gpu.sh",bash scripts/launchers/run_a1_flowawr_sd3_pickscore_8gpu.sh,flowawr_sd3_pickscore,"复现成功且后期回撤"
-A1.1,训练中,A1 独立重跑（PickScore 原始配置）,c3beaf6（原 A1 固定代码）；沿用原训练源码和 PickScore launcher，独立 Blackwell 运行入口。,PickScore（原始分数）,"原 A1 的独立 fresh run，沿用原 PickScore 训练算法，不恢复旧 checkpoint。
+A1.7,训练中,官方 PickScore 配置独立复现；沿用 A1.1 冻结源码及 8×B200 协议,c3beaf68c69d24c38391801e610a4400bece1c14；A1.1 冻结 source.tar.gz 94 文件逐字节不变；SHA256=98c0e87d0a55a56c9e7a92a1ace7ec8175a8bda4e3a7340d5b4c9df8ca793e01,PickScore（原始分数）,"原 A1 的独立 fresh run，沿用原 PickScore 训练算法，不恢复旧 checkpoint。
 reward=PickScore/26；advantage=(reward−组内均值)/(全局 reward 标准差+1e-4)，裁剪至[-5,5]，温度为1。
 p=组内 softmax(advantage)，energy=clip(Kp−1,-3,3)，K为实际同 prompt 组大小，hard_gating=False。
-target_x0=pred_x0_old+energy×(x0−pred_x0_old)，使用原逐样本归一化 MSE，并加参考模型 KL 项。保留逐样本日志。","UTP / Arnold：p-syd-mullet，8 张 B200，high-priority（1000）；作业 flowawr-a1-1-pickscore-b200-mullet-20261026。
+target_x0=pred_x0_old+energy×(x0−pred_x0_old)，使用原逐样本归一化 MSE，并加参考模型 KL 项。保留逐样本日志。","UTP / Arnold：p-syd-mullet，8 张 B200，high-priority（1000）；作业 flowawr-a1-7-pickscore-b200-mullet-20261029。
 配置入口：config/awr.py:sd3_pickscore
 默认模型：stabilityai/stable-diffusion-3.5-medium；分辨率512×512；LoRA r=32、alpha=64
 lr=3e-4；seed=42；fp16；KL系数=1e-4；max_grad_norm=1；EMA=True
@@ -28,214 +11,24 @@ lr=3e-4；seed=42；fp16；KL系数=1e-4；max_grad_norm=1；EMA=True
 timestep_fraction=0.99，每样本训练9个时间点
 global_std=True；adv_clip_max=5；temperature=1；energy范围=[-3,3]；hard_gating=False；filter_zero_advantage=False
 log_raw_data=True；每10 epoch评估/保存（含epoch 0）；num_epochs=100000
-resume_from=""""；从初始模型重新训练，不恢复原 A1 checkpoint。独立保存名称 flowawr_sd3_pickscore_a1_1。
-运行时：独立 Python 3.10.16 / torch 2.7.1+cu128；旧 A1 使用 NGC torch 2.13.0a0。镜像与训练源码保持原样，卡数和运行时差异已记录。","scripts/train_awr_sd3.py
+resume_from=""""；从初始模型重新训练，不恢复原 A1 checkpoint。独立保存名称 flowawr_sd3_pickscore_a1_7。
+运行时：独立 Python 3.10.16 / torch 2.7.1+cu128；旧 A1 使用 NGC torch 2.13.0a0。镜像与训练源码保持原样，卡数和运行时差异已记录。
+A1.7 独立 fresh run；完全复用 A1.1 冻结源码和8卡配置；初始 resume_from=""""。独立S3输出：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a1-7-b200-mullet-20261029。恢复索引仅属于A1.7；A1.1 checkpoint不复用。","scripts/train_awr_sd3.py
 flow_grpo/stat_tracking.py
 flow_grpo/pickscore_logging.py
 flow_grpo/pickscore_scorer.py
 flow_grpo/rewards.py
 config/awr.py:sd3_pickscore
 scripts/launchers/run_a1_flowawr_sd3_pickscore_8gpu.sh
-utp/runtime/run_training_a11_blackwell.sh",bash utp/runtime/run_training_a11_blackwell.sh a1-1（UTP 作业入口；内部调用原 scripts/launchers/run_a1_flowawr_sd3_pickscore_8gpu.sh）,flowawr_sd3_pickscore_a1_1,最新TensorBoard（2026-10-27T05:41:36.227672+00:00固定快照）：eval_reward_pickscore Eval step 710，原始PickScore=23.788464784622192（日志值×26）；共72个有效Eval点；来源UID=ccee76ce-6baa-484b-8f72-b8146c03d470。平台只读核验=2026-10-27T05:34:47.395456+00:00，Running/Ready。本次仅刷新标量结果，逐样本raw及D/C/R/gradient/positive_coefficient诊断采集范围未刷新。校验：utp/receipts/tensorboard-refresh-20261027-latest/scalar-refresh-20261027T054045Z/tensorboard-validation.json。
-A1.2,已停止（HPS复现成功）,FlowAWR 单奖励 baseline（SD3 + HPSv2.1）,main,HPSv2.1,"FlowAWR 单奖励 energy 分支，训练算法与 A1 相同，只换奖励与 prompt 集。
-advantage=(reward−组内均值)/(全局 reward 标准差+1e-4)，裁剪至[-5,5]，温度为 1；p=组内 softmax(advantage)。
-energy=clip(Kp−1,-3,3)，K 为实际同 prompt 组大小（hard_gating=False，与 A1 一致）。
-target_x0=pred_x0_old+energy×(x0−pred_x0_old)，逐样本归一化 MSE 加参考模型 KL 项。
-奖励为 HPSv2.1 原始分数（约 0.2 到 0.4），不做 /26 之类缩放。","GPU：实际为 8 张 H100，集群 general-aws-usw2-prod-0，优先级 1000；复用 A1 的环境与启动逻辑
-默认模型：stabilityai/stable-diffusion-3.5-medium；分辨率 512×512；LoRA r=32、alpha=64
-lr=3e-4；seed=42；fp16；KL 系数=1e-4；max_grad_norm=1；EMA=True；decay_type=1
-每 epoch 48 组×24 图=1152 图；每卡采样/训练 batch=9；rollout batches=16
-训练/评估采样步数=10/40；guidance_scale=1.0；训练 deterministic DPM2；timestep_fraction=0.99
-global_std=True；adv_clip_max=5；temperature=1；energy 范围=[-3,3]；filter_zero_advantage=False
-每 10 epoch 评估/保存（含 epoch 0）
-配置入口：config/awr.py:sd3_hpsv2
-训练 prompt 集：dataset/pickscore（Pick-a-Pic，与 A1 相同）；测试集 pickscore 2048 条，test_batch_size=16
-梯度累积=16；每 epoch 1 次 optimizer 更新；hard_gating=False
-log_raw_data=True（预设已改为开启；逐样本记录 hpsv2 原始分数 reward_raw、advantage_clipped、softmax_prob、energy_before_clip、energy_used 及训练项，只写日志不改目标）
-至少跑到 600 步（论文 Figure 4b：FlowAWR 约 450 步到 0.378，DiffusionNFT 约 560 步到 0.371）
-依赖：pip install hpsv2x==1.2.0；reward_ckpts/HPS_v2.1_compressed.pt
-实际恢复（2026-10-24）：原节点终止，旧 attempt 最后观测 860 次有效更新、0 次 AMP skip（global_step=859）；采用已核验 checkpoint-850，按原代码的 resume_from 机制恢复。新作业 flowawr-a1-2-h100-resume850-20261024；保持原镜像、训练源码、原 launcher 和其余参数，独立 wrapper 仅追加 --config.resume_from=<原 attempt 的 checkpoint-850>，写入新作业独立输出目录。","scripts/train_awr_sd3.py
-flow_grpo/stat_tracking.py
-flow_grpo/hpsv2_scorer.py
-flow_grpo/pickscore_logging.py（单奖励逐样本日志）
-flow_grpo/rewards.py
-config/awr.py:sd3_hpsv2
-scripts/launchers/run_a1_2_flowawr_sd3_hpsv2_8gpu.sh",bash scripts/launchers/run_a1_2_flowawr_sd3_hpsv2_8gpu.sh,flowawr_sd3_hpsv2,"最新TensorBoard（2026-10-26T12:56:54+00:00固定快照）：eval_reward_hpsv2 Eval step 2000，显示值 0.3886416554450989；采集时8 rank运行，来源UID=28ad8225-8078-4e30-abab-9215f2b5ad28。
-2026-10-26 用户要求复现成功后主动停止，平台核验已停止（2026-10-26T13:07:17.635544+00:00）。按论文图示步数对照，约450步 HPSv2.1 约0.378–0.379，A1.2 在450步为0.3789614，单次 seed=42 的指标及步数复现成功。停止前8个rank最后确认 global_step=2007；本地最后 Eval step=2000、HPSv2.1=0.3886416554450989。"
-A1.3,"已停止（OCR复现成功
-）",FlowAWR 单奖励 baseline（SD3 + OCR）,main,OCR,"FlowAWR 单奖励 energy 分支，训练算法与 A1 相同，只换奖励与 prompt 集。
-advantage=(reward−组内均值)/(全局 reward 标准差+1e-4)，裁剪至[-5,5]，温度为 1；p=组内 softmax(advantage)。
-hard_gating=True：energy=clip((p−1/K)/max(std(p−1/K)+1e-4, 1e-2),-3,3)，按组内 std 归一化而不是乘 K，用于规则型奖励。
-target_x0=pred_x0_old+energy×(x0−pred_x0_old)，逐样本归一化 MSE 加参考模型 KL 项。
-预设里的 config.beta=0.1 只在 DiffusionNFT 分支（energy_mode=False）生效，对本实验无影响。","GPU：8 张 H200，复用 A1 的环境与启动逻辑
-默认模型：stabilityai/stable-diffusion-3.5-medium；分辨率 512×512；LoRA r=32、alpha=64
-lr=3e-4；seed=42；fp16；KL 系数=1e-4；max_grad_norm=1；EMA=True；decay_type=1
-每 epoch 48 组×24 图=1152 图；每卡采样/训练 batch=9；rollout batches=16
-训练/评估采样步数=10/40；guidance_scale=1.0；训练 deterministic DPM2；timestep_fraction=0.99
-global_std=True；adv_clip_max=5；temperature=1；energy 范围=[-3,3]；filter_zero_advantage=False
-每 10 epoch 评估/保存（含 epoch 0）
-配置入口：config/awr.py:sd3_ocr
-训练 prompt 集：dataset/ocr；测试集 ocr 1018 条，test_batch_size=16；prompt_fn=general_ocr
-gradient_step_per_epoch=2：梯度累积=8，每 epoch 2 次 optimizer 更新（与 A1 的 1 次不同）
-hard_gating=True
-log_raw_data=True（预设已改为开启；逐样本记录 reward_raw、识别文本、编辑距离、目标长度、OCR 失败标记，以及 advantage/energy 与训练项）
-至少跑到 400 步（论文 Figure 3 表：FlowAWR 0.26k 步到 0.975，DiffusionNFT 0.4k 步到 0.98）
-依赖：pip install paddlepaddle-gpu==2.6.2 paddleocr==2.9.1 python-Levenshtein；需先验证 Paddle 与集群 CUDA 运行时兼容；OCR 打分比 PickScore 慢，每轮耗时会高于 A1","scripts/train_awr_sd3.py
-flow_grpo/stat_tracking.py（hard_gating 分支）
-flow_grpo/ocr.py（return_raw 返回识别细节）
-flow_grpo/pickscore_logging.py（单奖励逐样本日志）
-flow_grpo/rewards.py
-config/awr.py:sd3_ocr
-scripts/launchers/run_a1_3_flowawr_sd3_ocr_8gpu.sh",bash scripts/launchers/run_a1_3_flowawr_sd3_ocr_8gpu.sh,flowawr_sd3_ocr,复现成功
-A1.4,已停止,FlowAWR 单奖励 baseline（SD3 + GenEval）,main,GenEval ,"FlowAWR 单奖励 energy 分支，训练算法与 A1 相同，只换奖励与 prompt 集。
-advantage=(reward−组内均值)/(全局 reward 标准差+1e-4)，裁剪至[-5,5]，温度为 1；p=组内 softmax(advantage)。
-hard_gating=True：energy=clip((p−1/K)/max(std(p−1/K)+1e-4, 1e-2),-3,3)，按组内 std 归一化而不是乘 K，用于规则型奖励。
-target_x0=pred_x0_old+energy×(x0−pred_x0_old)，逐样本归一化 MSE 加参考模型 KL 项。
-训练奖励是 GenEval 的部分得分 score（按 include 子句的计数/颜色/位置逐项打分后取均值，0 到 1），不是 0/1 严格正确；strict_accuracy、accuracy 及各 tag 子任务准确率只作评估记录。训练时 only_strict=True，不算非严格 correct。","GPU：8 张 H200，复用 A1 的环境与启动逻辑
-默认模型：stabilityai/stable-diffusion-3.5-medium；分辨率 512×512；LoRA r=32、alpha=64
-lr=3e-4；seed=42；fp16；KL 系数=1e-4；max_grad_norm=1；EMA=True；decay_type=1
-每 epoch 48 组×24 图=1152 图；每卡采样/训练 batch=9；rollout batches=16
-训练/评估采样步数=10/40；guidance_scale=1.0；训练 deterministic DPM2；timestep_fraction=0.99
-global_std=True；adv_clip_max=5；temperature=1；energy 范围=[-3,3]；filter_zero_advantage=False
-每 10 epoch 评估/保存（含 epoch 0）
-配置入口：config/awr.py:sd3_geneval
-训练 prompt 集：dataset/geneval/train_metadata.jsonl；测试集 geneval 2212 条，test_batch_size=14；prompt_fn=geneval
-梯度累积=16；每 epoch 1 次 optimizer 更新
-hard_gating=True
-log_raw_data=True（预设已改为开启；逐样本记录 reward_raw=部分得分、tag、strict_correct、correct（训练时为 null）、reason，以及 advantage/energy 与训练项）
-至少跑到 600 步（论文 Figure 3 表：FlowAWR 0.5k 步到 0.98，DiffusionNFT 1k 步到 0.98）
-依赖：openmim + mmengine；MMCV 1.x（MMCV_WITH_OPS=1 FORCE_CUDA=1 源码安装）；MMDetection 2.x；reward_ckpts/mask2former_swin-s-p4-w7-224_lsj_8x2_50e_coco_20220504_001756-743b7d99.pth；open-clip-torch、clip-benchmark。环境最老最难装，先在集群确认","scripts/train_awr_sd3.py
-flow_grpo/stat_tracking.py（hard_gating 分支）
-flow_grpo/gen_eval.py（return_results 返回逐图判定）
-flow_grpo/pickscore_logging.py（单奖励逐样本日志）
-flow_grpo/rewards.py
-config/awr.py:sd3_geneval
-scripts/launchers/run_a1_4_flowawr_sd3_geneval_8gpu.sh",bash scripts/launchers/run_a1_4_flowawr_sd3_geneval_8gpu.sh,flowawr_sd3_geneval,"未复现论文中GenEval
-2026-10-24 官方独立复评 checkpoint-520 已完成（退出码 0，均值复算通过；2216 行、2212 个唯一 sample_id）：GenEval=0.051256，accuracy=0.038809，strict_accuracy=0.027978。在线曲线峰值为 step 150 的 GenEval=0.907040、step 150 的 strict_accuracy=0.845217，以及 step 170 的 accuracy=0.872744；在线 step 520 已降至 GenEval=0.038357、accuracy=0.020758、strict_accuracy=0.013989，显示后期明显退化，并非全程低分。官方独立复评与在线评估的采样随机数及 fp16 执行路径不同，数值不作逐值等同。"
-A1.4.1,"已停止",FlowAWR 单奖励 baseline（SD3 + GenEval，A1.4 独立重跑）,main,GenEval ,"FlowAWR 单奖励 energy 分支，训练算法与 A1 相同，只换奖励与 prompt 集。
-advantage=(reward−组内均值)/(全局 reward 标准差+1e-4)，裁剪至[-5,5]，温度为 1；p=组内 softmax(advantage)。
-hard_gating=True：energy=clip((p−1/K)/max(std(p−1/K)+1e-4, 1e-2),-3,3)，按组内 std 归一化而不是乘 K，用于规则型奖励。
-target_x0=pred_x0_old+energy×(x0−pred_x0_old)，逐样本归一化 MSE 加参考模型 KL 项。
-训练奖励是 GenEval 的部分得分 score（按 include 子句的计数/颜色/位置逐项打分后取均值，0 到 1），不是 0/1 严格正确；strict_accuracy、accuracy 及各 tag 子任务准确率只作评估记录。训练时 only_strict=True，不算非严格 correct。","GPU：实际已分配 8 张 NVIDIA B200，集群 p-syd-mullet，优先级 1000。保持原镜像。
-默认模型：stabilityai/stable-diffusion-3.5-medium；分辨率 512×512；LoRA r=32、alpha=64
-lr=3e-4；seed=42；fp16；KL 系数=1e-4；max_grad_norm=1；EMA=True；decay_type=1
-每 epoch 48 组×24 图=1152 图；每卡采样/训练 batch=9；rollout batches=16
-训练/评估采样步数=10/40；guidance_scale=1.0；训练 deterministic DPM2；timestep_fraction=0.99
-global_std=True；adv_clip_max=5；temperature=1；energy 范围=[-3,3]；filter_zero_advantage=False
-每 10 epoch 评估/保存（含 epoch 0）
-配置入口：config/awr.py:sd3_geneval
-训练 prompt 集：dataset/geneval/train_metadata.jsonl；测试集 geneval 2212 条，test_batch_size=14；prompt_fn=geneval
-梯度累积=16；每 epoch 1 次 optimizer 更新
-hard_gating=True
-log_raw_data=True（预设已改为开启；逐样本记录 reward_raw=部分得分、tag、strict_correct、correct（训练时为 null）、reason，以及 advantage/energy 与训练项）
-训练长度：num_epochs=100000；至少运行 2000 步，不把 2000 步设为自动停止点，不主动停止健康训练。原 600 步作为论文复现观察点（原记录：论文 Figure 3 表，FlowAWR 0.5k 步到 0.98，DiffusionNFT 1k 步到 0.98）。
-依赖：openmim + mmengine；MMCV 1.x（MMCV_WITH_OPS=1 FORCE_CUDA=1 源码安装）；MMDetection 2.x；reward_ckpts/mask2former_swin-s-p4-w7-224_lsj_8x2_50e_coco_20220504_001756-743b7d99.pth；open-clip-torch、clip-benchmark。环境最老最难装，先在集群确认
-从上述初始模型重新训练；resume_from=""""，不续旧 checkpoint。复用原 A1.4 实际训练源码快照，算法与原参数保持不变。
-实际环境：为 B200 必需兼容性，将 torch 2.6.0/cu124 调整为 2.7.1/cu128、torchvision 0.21.0 调整为 0.22.1，MMCV 原生扩展按 CUDA 12.8/sm100 构建。原训练源码快照、算法参数、fresh seed=42 及 resume_from="""" 保持不变。已确认进入训练：2026-10-24 15:47:43.866803 UTC 首个有效 optimizer 更新（global_step=0；该时刻已确认 1 次有效更新、0 次 AMP skip）；15:48 UTC 实测显存约 53.9–62.3 GiB/卡（8 张 B200）。","scripts/train_awr_sd3.py
-flow_grpo/stat_tracking.py（hard_gating 分支）
-flow_grpo/gen_eval.py（return_results 返回逐图判定）
-flow_grpo/pickscore_logging.py（单奖励逐样本日志）
-flow_grpo/rewards.py
-config/awr.py:sd3_geneval
-scripts/launchers/run_a1_4_flowawr_sd3_geneval_8gpu.sh
-复用原 A1.4 实际训练源码快照；上述路径沿用该快照版本，不直接取当前 main 的其它更改。",bash scripts/launchers/run_a1_4_flowawr_sd3_geneval_8gpu.sh --config.run_name=flowawr_sd3_geneval_a1_4_1,flowawr_sd3_geneval_a1_4_1,
-A1.4.2,训练中,FlowAWR 单奖励 baseline（SD3 + GenEval，A1.4 独立重跑）,main,GenEval ,"FlowAWR 单奖励 energy 分支，训练算法与 A1 相同，只换奖励与 prompt 集。
-advantage=(reward−组内均值)/(全局 reward 标准差+1e-4)，裁剪至[-5,5]，温度为 1；p=组内 softmax(advantage)。
-hard_gating=True：energy=clip((p−1/K)/max(std(p−1/K)+1e-4, 1e-2),-3,3)，按组内 std 归一化而不是乘 K，用于规则型奖励。
-target_x0=pred_x0_old+energy×(x0−pred_x0_old)，逐样本归一化 MSE 加参考模型 KL 项。
-训练奖励是 GenEval 的部分得分 score（按 include 子句的计数/颜色/位置逐项打分后取均值，0 到 1），不是 0/1 严格正确；strict_accuracy、accuracy 及各 tag 子任务准确率只作评估记录。训练时 only_strict=True，不算非严格 correct。","GPU：实际已分配 8 张 NVIDIA B200，集群 p-syd-mullet，b200-tas，优先级 1000；已确认有效训练更新，实测显存约 62.37–68.63 GiB/卡。保持原镜像。
-默认模型：stabilityai/stable-diffusion-3.5-medium；分辨率 512×512；LoRA r=32、alpha=64
-lr=3e-4；seed=42；fp16；KL 系数=1e-4；max_grad_norm=1；EMA=True；decay_type=1
-每 epoch 48 组×24 图=1152 图；每卡采样/训练 batch=9；rollout batches=16
-训练/评估采样步数=10/40；guidance_scale=1.0；训练 deterministic DPM2；timestep_fraction=0.99
-global_std=True；adv_clip_max=5；temperature=1；energy 范围=[-3,3]；filter_zero_advantage=False
-每 10 epoch 评估/保存（含 epoch 0）
-配置入口：config/awr.py:sd3_geneval
-训练 prompt 集：dataset/geneval/train_metadata.jsonl；测试集 geneval 2212 条，test_batch_size=14；prompt_fn=geneval
-梯度累积=16；每 epoch 1 次 optimizer 更新
-hard_gating=True
-log_raw_data=True（预设已改为开启；逐样本记录 reward_raw=部分得分、tag、strict_correct、correct（训练时为 null）、reason，以及 advantage/energy 与训练项）
-训练长度：num_epochs=100000；至少运行 2000 步，不把 2000 步设为自动停止点，不主动停止健康训练。原 600 步作为论文复现观察点（原记录：论文 Figure 3 表，FlowAWR 0.5k 步到 0.98，DiffusionNFT 1k 步到 0.98）。
-依赖：openmim + mmengine；MMCV 1.x（MMCV_WITH_OPS=1 FORCE_CUDA=1 源码安装）；MMDetection 2.x；reward_ckpts/mask2former_swin-s-p4-w7-224_lsj_8x2_50e_coco_20220504_001756-743b7d99.pth；open-clip-torch、clip-benchmark。环境最老最难装，先在集群确认
-从上述初始模型重新训练；resume_from=""""，不续旧 checkpoint。复用原 A1.4 实际训练源码快照，算法与原参数保持不变。
-计划复用 A1.4.1 已验证的 B200 兼容环境：torch 2.7.1/cu128、torchvision 0.22.1，MMCV 原生扩展按 CUDA 12.8/sm100 构建。原训练源码快照、算法参数、fresh seed=42 及 resume_from="""" 保持不变。A1.4.2 为独立从头重跑，使用独立 run_name 与输出目录，不继承 A1.4.1 checkpoint 或训练进度。","scripts/train_awr_sd3.py
-flow_grpo/stat_tracking.py（hard_gating 分支）
-flow_grpo/gen_eval.py（return_results 返回逐图判定）
-flow_grpo/pickscore_logging.py（单奖励逐样本日志）
-flow_grpo/rewards.py
-config/awr.py:sd3_geneval
-scripts/launchers/run_a1_4_flowawr_sd3_geneval_8gpu.sh
-复用原 A1.4 实际训练源码快照；上述路径沿用该快照版本，不直接取当前 main 的其它更改。",bash scripts/launchers/run_a1_4_flowawr_sd3_geneval_8gpu.sh --config.run_name=flowawr_sd3_geneval_a1_4_2,flowawr_sd3_geneval_a1_4_2,最新TensorBoard（2026-10-27T05:41:36.169166+00:00固定快照）：eval_reward_geneval Eval step 530，geneval=0.9699534177780151（原始日志值）；共54个有效Eval点；来源UID=232556df-677e-462a-b89c-0bd496a228b4。平台只读核验=2026-10-27T05:34:47.395456+00:00，Running/Ready。本次仅刷新标量结果，逐样本raw及D/C/R/gradient/positive_coefficient诊断采集范围未刷新。校验：utp/receipts/tensorboard-refresh-20261027-latest/scalar-refresh-20261027T054045Z/tensorboard-validation.json。
-A1.5,"已停止",FlowAWR，PickScore 奖励 × GenEval 的 advantage 归一化（hard_gating=True）,main,PickScore（原始分数）,"与 A1 完全相同的训练，唯一改动：train.hard_gating 从 False 改为 True，即把 GenEval/OCR 预设用的组内 std 归一化能量用在 PickScore 上。
-前半段不变：reward=PickScore/26；advantage=(reward−组内均值)/(全局 std+1e-4)，裁剪 ±5；p=组内 softmax(advantage)；e_raw=p−1/K。
-A1：energy=clip(K·e_raw, −3, 3)，K=24。
-A1.5：energy=clip(e_raw / max(std_组内(e_raw)+1e-4, 1e-2), −3, 3)。
-target_x0=pred_x0_old+energy×(x0−pred_x0_old)，逐样本归一化 MSE 加 KL 项，与 A1 相同。
-预期行为（由 A2.1 记录的官方运行 energy std≈0.18 推算，待数据核实）：e_raw 的组内 std≈0.18/24≈0.0075，低于 1e-2 下限，分母多数时间取 0.01，于是 energy≈100·e_raw，相当于 A1 能量整体放大约 4.2 倍；组内最大值约 1.75×4.2≈7，正样本顶端会被 +3 裁剪。若某组 e_raw std 超过 0.01，则该组被归一到单位 std。与 A2.1（softmax 前乘 3.33，非线性来自 softmax）不同，这里非线性来自 ±3 裁剪和分母下限。","GPU：8 张 H200，复用 A1 的环境与启动逻辑
-默认模型：stabilityai/stable-diffusion-3.5-medium；分辨率 512×512；LoRA r=32、alpha=64
-lr=3e-4；seed=42；fp16；KL 系数=1e-4；max_grad_norm=1；EMA=True；decay_type=1
-每 epoch 48 组×24 图=1152 图；每卡采样/训练 batch=9；rollout batches=16；梯度累积=16；每 epoch 1 次 optimizer 更新
-训练/评估采样步数=10/40；guidance_scale=1.0；训练 deterministic DPM2；timestep_fraction=0.99
-global_std=True；adv_clip_max=5；temperature=1；energy 范围=[-3,3]；filter_zero_advantage=False
-每 10 epoch 评估/保存（含 epoch 0）
-配置入口：config/awr.py:sd3_pickscore
-训练 prompt 集：dataset/pickscore；测试集 pickscore 2048 条，test_batch_size=16
-hard_gating=True（唯一改动）
-log_raw_data=True（预设自带，逐样本落盘 advantage_clipped、softmax_prob、energy_before_clip、energy_used，可直接核对上面的预期）
-至少跑到 600 轮，与 A1、A2.1 对齐
-基线：A1（同环境逻辑、同 seed、同卡数，prompt 顺序逐步一致）","flow_grpo/stat_tracking.py 第 66 到 70 行（hard_gating 分支：gating_energy_stds = max(std+1e-4, 1e-2)，energies_reranged = raw_energies / gating_energy_stds）
-scripts/train_awr_sd3.py 第 835 行（把 config.train.hard_gating 传入 stat_tracker.update）
-flow_grpo/pickscore_logging.py（单奖励逐样本日志）
-config/awr.py 第 102 行（_get_config 默认 hard_gating=False）
-scripts/launchers/run_a1_5_flowawr_sd3_pickscore_hardgating_8gpu.sh（由 A1 启动器派生，仅改保存目录、运行名并追加 --config.train.hard_gating=True）
-本实验不修改任何代码文件",bash scripts/launchers/run_a1_5_flowawr_sd3_pickscore_hardgating_8gpu.sh,flowawr_sd3_pickscore_hardgating,
-A1.6,"已停止",FlowAWR，GenEval 奖励 × PickScore 的 advantage 归一化（hard_gating=False）,main,GenEval ,"与 A1.4 完全相同的训练，唯一改动：train.hard_gating 从 True 改为 False，即把 PickScore 预设用的乘 K 能量用在 GenEval 上。
-前半段不变：reward=GenEval 部分得分 score（0 到 1，离散档位，整组同分常见）；advantage=(reward−组内均值)/(全局 std+1e-4)，裁剪 ±5；p=组内 softmax(advantage)；e_raw=p−1/K。
-A1.4：energy=clip(e_raw / max(std_组内(e_raw)+1e-4, 1e-2), −3, 3)。
-A1.6：energy=clip(K·e_raw, −3, 3)=clip(24p−1, −3, 3)，即论文 Eq. 11 的 G·p−1。
-target_x0=pred_x0_old+energy×(x0−pred_x0_old)，逐样本归一化 MSE 加 KL 项，与 A1.4 相同。
-预期行为（按 0/1 两档奖励手算，待数据核实；实际部分得分有中间档，趋势相同）：整组同分时 p=1/K，energy=0，两种方式一致。组内少数成功时成功样本 advantage 远大于失败样本，softmax 把概率集中到成功样本，24p−1 可达 5 以上，被 +3 裁剪；失败样本 energy 约 −1 到 0。因此 A1.6 的组内能量和不再为零，正样本裁剪比例会明显高于 A1.4，这是两种归一化在离散奖励上的核心差别。","GPU：8 张 H200，复用 A1 的环境与启动逻辑
-默认模型：stabilityai/stable-diffusion-3.5-medium；分辨率 512×512；LoRA r=32、alpha=64
-lr=3e-4；seed=42；fp16；KL 系数=1e-4；max_grad_norm=1；EMA=True；decay_type=1
-每 epoch 48 组×24 图=1152 图；每卡采样/训练 batch=9；rollout batches=16；梯度累积=16；每 epoch 1 次 optimizer 更新
-训练/评估采样步数=10/40；guidance_scale=1.0；训练 deterministic DPM2；timestep_fraction=0.99
-global_std=True；adv_clip_max=5；temperature=1；energy 范围=[-3,3]；filter_zero_advantage=False
-每 10 epoch 评估/保存（含 epoch 0）
-配置入口：config/awr.py:sd3_geneval
-训练 prompt 集：dataset/geneval/train_metadata.jsonl；测试集 geneval 2212 条，test_batch_size=14；prompt_fn=geneval
-hard_gating=False（唯一改动）
-log_raw_data=True（sd3_geneval 预设已改为开启；逐样本记录 reward_raw、tag、strict_correct、reason 及 advantage_clipped、softmax_prob、energy_before_clip、energy_used，可直接核对上面的预期）
-至少跑到 600 步，与 A1.4 对齐
-基线：A1.4（同环境逻辑、同 seed、同卡数）
-依赖同 A1.4：MMCV 1.x、MMDetection 2.x、mask2former 权重、open-clip","flow_grpo/stat_tracking.py 第 66 到 70 行（hard_gating=False 分支：energies_reranged = raw_energies * k）
-scripts/train_awr_sd3.py 第 835 行
-flow_grpo/pickscore_logging.py（单奖励逐样本日志）
-config/awr.py 第 138 行（sd3_geneval 预设 hard_gating=True，本实验用命令行覆盖回 False）
-scripts/launchers/run_a1_6_flowawr_sd3_geneval_softk_8gpu.sh（由 A1.4 启动器派生，仅改保存目录、运行名并追加 --config.train.hard_gating=False）
-本实验不修改任何代码文件",bash scripts/launchers/run_a1_6_flowawr_sd3_geneval_softk_8gpu.sh,flowawr_sd3_geneval_softk,"实验跑崩"
-A1.6.1,已停止,GenEval · PickScore能量计算方式 · B200重跑,A1.4.1 同源固定源码包 source.tar.gz；SHA256=4dc743f60195317785b071e689da75c73ed7ddb01a01a7b65a5e221a0db29a20。复用原 A1.4/A1 训练源码及启动器，不混入当前 main 的其他更改。,GenEval ,"A1.6 的独立 B200 重跑，baseline 为 A1.4.1。唯一算法改动是 --config.train.hard_gating=False，将 GenEval 的 energy 改为 PickScore 使用的乘 K 方式，advantage 计算不变。reward=GenEval 部分得分 score，可因计数惩罚为负，不等同于 strict 0/1 正确率。advantage=(reward−同 prompt 组内均值)/(全局 reward 标准差+1e-4)，裁剪至[-5,5]，temperature=1；p=组内 softmax(advantage)。K 取实际同 prompt 合组后的样本数，不固定为24。energy=clip(K×(p−1/K),−3,3)=clip(Kp−1,−3,3)。A1.4.1 的 hard_gating=True 则用 clip((p−1/K)/max(std_组内(p−1/K)+1e-4,1e-2),−3,3)。target_x0=pred_x0_old+energy×(x0−pred_x0_old)，逐样本归一化 MSE 加参考模型 KL 项保持不变。strict_accuracy、accuracy 及各 tag 指标只作评估记录；训练 only_strict=True。","UTP / Arnold：p-syd-mullet，8 张 B200，priority=high（1000），独立 fresh run。基于 A1.4.1 同源固定源码及 B200 环境：torch 2.7.1/cu128、torchvision 0.22.1；MMCV 1.x 原生扩展按 CUDA 12.8/sm100 构建，MMDetection 2.x、mask2former 权重、open-clip-torch、clip-benchmark。模型 stabilityai/stable-diffusion-3.5-medium；512×512；LoRA r=32、alpha=64；lr=3e-4；seed=42；fp16；KL 系数=1e-4；max_grad_norm=1；EMA=True；decay_type=1。8卡×每卡采样/训练 batch9×rollout batches16=1152图/更新；gradient_accumulation_steps=16；每epoch1次optimizer更新。K按实际同prompt合组，不固定为24。训练/评估采样步数=10/40；guidance_scale=1.0；训练 deterministic DPM2；timestep_fraction=0.99；global_std=True；adv_clip_max=5；temperature=1；energy范围=[-3,3]；filter_zero_advantage=False。config/awr.py:sd3_geneval；训练 dataset/geneval/train_metadata.jsonl；测试2212条，test_batch_size=14；prompt_fn=geneval。hard_gating=False（唯一算法覆盖）；log_raw_data=True，记录reward_raw、tag、strict_correct、reason及advantage_clipped、softmax_prob、energy_before_clip、energy_used。num_epochs=100000；每10 epoch评估/保存（含epoch0）；2000步仅为进度观察点，不自动停止健康训练。resume_from=""""，从初始模型重新训练，不续旧checkpoint。YAML：utp/a1-6-1-geneval-softk-b200-mullet-s3.yaml。",固定源码包内 scripts/train_awr_sd3.py；flow_grpo/stat_tracking.py（hard_gating=False：energies_reranged=raw_energies*k）；flow_grpo/gen_eval.py；flow_grpo/rewards.py；flow_grpo/pickscore_logging.py；config/awr.py:sd3_geneval；scripts/launchers/run_a1_4_flowawr_sd3_geneval_8gpu.sh。仅追加 --config.train.hard_gating=False 及独立 run_name，不改训练源码。核验：utp/receipts/a1-6-1-20261026/a1-6-1-source-manifest.json、effective-config-verification.json。,arnold submit -f utp/a1-6-1-geneval-softk-b200-mullet-s3.yaml --application-id core-cn --cluster p-syd-mullet --namespace b-core-cn-prod --job-name flowawr-a1-6-1-softk-b200-mullet-20261026 --priority high --no-wait,flowawr_sd3_geneval_softk_a1_6_1,2026-10-27 按用户要求停止。UTP p-syd-mullet job=flowawr-a1-6-1-softk-b200-mullet-20261026；2026-10-27T04:29:33.957278+00:00 核验完整 namespace 列表，匹配的 JobSet、Pod、Workload、Job 均为0，资源已释放。不自动恢复。停止回执：utp/receipts/a1-6-1-stop-20261027/stop-verification.json。
-A5.2,已停止,FlowAWR，A5.1 的 4 倍样本累积（4608 张 / 192 组）+ 学习率 3e-4 降为 1e-4，其他与 A5.1 相同,main,PickScore（原始分数）,"与 A5.1 完全相同的训练（每次更新 4608 张 / 192 组 × 24，8 卡 H100），唯一改动：学习率 3e-4 改为 1e-4。其他参数全部不动，批量、EMA、KL 系数、裁剪都与 A5.1 一致。
-依据是 A5.1 到第 188 步的 raw_data 分析。大批量确实把梯度噪声降下来了：前 40 步裁剪前梯度范数是 A1 的 0.4 到 0.5 倍，符合 4 倍样本噪声减半；按更新次数早期 Eval 领先 A1 0.2 到 0.35 分，同 Eval 下 KL 低 9% 到 20%。但第 80 步 EMA decay 升到 0.9 之后，裁剪前梯度范数出现周期约 21 步、幅度递增的尖峰（第 108/132/152/173 步 0.019 到 0.026，谷底 0.002，自相关 lag 21 为 0.46），与 training_terms 里实时权重预测减 EMA(old) 预测的相对差距同步（谷 2e-3、峰 11e-3 到 16e-3，相关 0.97），每个尖峰 KL 上一个台阶（0.091 到 0.115），Eval 从第 120 步 23.47 回落到第 170 步 23.30，训练集 90% 的 prompt、评估集 70% 的 prompt 分数下降。按累计样本数 A5.1 全程落后 A1。
-机制（推断）：采样和 old 预测用 EMA 权重（decay 0.9，滞后约 10 步），训练更新实时权重，构成带滞后的反馈环。实时权重每次更新的位移由 Adam 决定、与 lr 成正比；梯度噪声减半后每步方向更一致，10 步滞后窗口内实时权重与 EMA 的差距按位移线性累积而不是随机游走，环增益升高进入持续振荡。A1 噪声大，同类尖峰不规则、晚得多（第 1180、1813 步），且能自行恢复。
-选 1e-4 的理由：环增益与 lr 成正比，噪声减半至少要把 lr 减半（1.5e-4）才回到 A1 的增益水平，而 A1 自己也有同类事件，所以再留 1.5 倍余量，取 3 倍降到 1e-4；1e-4 也是本仓库 config/wan.py 已用的学习率。若 1e-4 下振荡消失且 Eval 超过 A5.1 的 23.47，再用 1.5e-4 或 2e-4 夹逼；若 1e-4 仍振荡，说明问题不在步长而在 EMA 采样设置，转去改采样权重（需新建脚本副本）。
-预期：按更新次数早期比 A5.1 慢（Adam 步长缩小 3 倍），按样本数早期仍落后 A1。检验目标不是样本效率，而是：(1) updates.jsonl 的 grad_norm_before_clip 不再出现 21 步周期尖峰（lag 21 自相关低于 0.2）；(2) Eval 不在第 120 到 180 步见顶回落；(3) 同 KL 下 Eval 不低于 A1，最终高度能否超过 A1 的 24.08（2125 轮）。
-实现：不新建、不修改任何文件。复用 A1 启动器，命令行覆盖 train.learning_rate（与 A5.1 覆盖两个批量参数是同一种做法）。已在本地验证解析结果：learning_rate=1e-4（float）、num_batches_per_epoch=64、gradient_accumulation_steps=64、run_name 以最后一个参数为准。AdamW 没有学习率调度器（scripts/train_awr_sd3.py 第 483 到 491 行），lr 全程恒定。","GPU：与 A5.1 同一集群、同一卡数（8 卡 H100）；16 卡时改用 num_batches_per_epoch=32、gradient_accumulation_steps=32（两者必须相等），每轮 4608 张不变
-配置入口：config/awr.py:sd3_pickscore，命令行覆盖 sample.num_batches_per_epoch=64、train.gradient_accumulation_steps=64、train.learning_rate=1e-4
-seed=42；fp16；lr=1e-4；KL 系数 1e-4；β1=0.9、β2=0.999、weight_decay=1e-4、eps=1e-8；max_grad_norm=1；EMA=True；temperature=1；global_std=True；adv_clip_max=5；energy 范围 [−3, 3]
-训练/评估采样步数 10/40；guidance_scale=1.0；deterministic DPM2；timestep_fraction=0.99；num_inner_epochs=1
-log_raw_data=True（判断振荡需要 updates.jsonl 的 grad_norm_before_clip 和 training_terms.jsonl 的 delta_l2/residual_l2；raw_data 在 node-local 盘，Pod 重建即丢失，运行中定期拉取）
-每 10 次更新评估/保存不改（每 46080 张评估一次）
-8 卡 H100 上 A5.1 实测 7.8 分钟/次更新（189 次用时 24.6 小时）；至少跑 300 次更新（约 39 小时，= A1 1200 轮的样本量）；第 300 步 Eval 仍在上升则续到 400
-基线：A5.1（同配置只差 lr，对照梯度范数尖峰、KL 台阶、Eval 见顶位置）和 A1（按累计样本数与同 KL 对齐）","scripts/train_awr_sd3.py 第 483 到 491 行（AdamW，lr 直接取 config.train.learning_rate，无调度器）、第 606 行（EMAModuleWrapper decay=0.9）、第 1303 到 1307 行（EMA 更新）
-config/base.py 第 77 行（train.learning_rate 默认 3e-4）
-config/awr.py:sd3_pickscore
-scripts/launchers/run_a1_flowawr_sd3_pickscore_8gpu.sh（A1 启动器，A5.1 与 A5.2 复用）
-本实验不修改任何代码文件",bash scripts/launchers/run_a1_flowawr_sd3_pickscore_8gpu.sh --config.sample.num_batches_per_epoch=64 --config.train.gradient_accumulation_steps=64 --config.train.learning_rate=1e-4 --config.run_name=flowawr_sd3_pickscore_accum4x_lr1e-4,flowawr_sd3_pickscore_accum4x_lr1e-4,"2026-10-27T06:09:27.385818+00:00 按用户要求停止 A5.2（内部ID A2.2.1）。完整 namespace 核验 JobSet/Pod/Workload/Job 均为0，8×B200资源已释放；不自动恢复或重试。回执：utp/receipts/a5-2-stop-20261027/stop-verification.json。停前TensorBoard快照 2026-10-27T06:07:17.743829+00:00、Eval step 730，原始PickScore=23.451919674873352；74个Eval点全部保持。直接核实rank0完成736次非跳过更新（global_step735），不声称更晚的最终训练步；raw/诊断未刷新。
-
-原有结果记录（历史）：
-最新TensorBoard（2026-10-26T08:20:44.480476+00:00固定快照）：eval_reward_pickscore Eval step 480，显示值 23.54574751853943；采集时8 rank运行，来源UID=49076573-45fc-4eab-9608-5a9698083479。"
+stage/staging/runtime/run_training_a11_blackwell.sh",stage/staging/runtime/run_training_a11_blackwell.sh a1-7；supervisor=run_gcore_s3_a11_training.py；内部原 launcher scripts/launchers/run_a1_flowawr_sd3_pickscore_8gpu.sh。候选目录：utp/artifacts/a1-7-20261029/base/bundle,flowawr_sd3_pickscore_a1_7,"[A1.7 最新运行登记]
+训练中；8 rank 已共同确认完整、finite、非 skipped optimizer step 11。 独立重新训练；seed=42，energy=[-3,3]，resume_from为空。
+job=flowawr-a1-7-pickscore-b200-mullet-20261029；job_uid=d47ac14b-4d15-40c7-94c7-44de262a4422；pod_uid=372169ef-d7db-4e40-98cb-c73c15a4746f。状态核验：2026-10-29T03:35:10.285361+00:00。
+提交证据：utp/receipts/a1-repeat-20261029/submission-request.json；状态证据：utp/receipts/a1-repeat-20261029/startup/20261029T033510.290724Z-platform-observation.json；8rank证据：utp/receipts/a1-repeat-20261029/startup/20261029T033530.607907Z-training-probe.json。
+[/A1.7 最新运行登记]
+[A1.7 最新结果同步] 2026-10-29T03:34:32.874574+00:00固定源：Eval step 10，PickScore 22.21440566，共2点；全量本地TensorBoard 6482条/94 tags已核验。与A1/A1.1曲线独立。逐样本诊断未刷新。 [/A1.7 最新结果同步]
+[A1.7 自动恢复] 2026-10-29T03:53:10.297464+00:00 已启用本实验完整 checkpoint 自动恢复；首次训练后 checkpoint 10，CPU optimizer 恢复、companion 与 READY CAS 回读已验证。当前 attempt 仍为 fresh run，未中断正式 trainer；不复用 A1.1 checkpoint。证据：utp/receipts/a1-repeat-20261029/recovery-activation/ACTIVATION_RECEIPT.json。 [/A1.7 自动恢复]"
 A2.1,训练中,"FlowAWR，energy 裁剪区间 [−0.7, 5]（SD3 + PickScore，新独立实验）",main,PickScore（原始分数）,"纯 clipping：energy = clip(Kp − 1, −0.7, 5)，K 为实际同 prompt 组大小，p 为原组内 softmax 概率。保留 advantage、temperature=1、softmax、loss、KL、EMA 及学习率，不增加去均值或重归一化；其余沿用 A2.9 已验证的 runtime config。
-这是新的裁剪实验；旧 A2.1 temperature=0.3 实验留在 experiments_past.csv。使用独立 run_name 和输出来源，不混用历史同号实验的数据。","GPU：已分配单节点 8×B200；cluster=p-syd-mullet；node=mi-07efa5ae02eba28da；Kueue high-priority=1000。Workload admitted / PodsReady：2026-10-27T04:32:32Z。
+这是新的裁剪实验；A0.1 temperature=0.3 实验留在 experiments_past.csv，属于 A0 系列。使用独立 run_name 和输出来源，不混用不同实验的数据。","GPU：已分配单节点 8×B200；cluster=p-syd-mullet；node=mi-07efa5ae02eba28da；Kueue high-priority=1000。Workload admitted / PodsReady：2026-10-27T04:32:32Z。
 配置入口：config/awr_energy_clip.py:sd3_pickscore_eclip_m0p5_p5；CLI 覆盖 train.energy_min=-0.7、train.energy_max=5.0，实际生效值以保存 config.json 为准。
 SD3.5-Medium；512×512；LoRA r=32、alpha=64；seed=42；fp16；lr=3e-4；temperature=1；KL=1e-4；max_grad_norm=1；EMA=True；global_std=True；adv_clip_max=5；hard_gating=False；filter_zero_advantage=False。
 8 卡每卡 batch=9；sample.num_batches_per_epoch=16；gradient_accumulation_steps=16；每次更新 48 组×24 图=1152 图。训练/评估采样步数 10/40；guidance_scale=1.0；deterministic DPM2；timestep_fraction=0.99；num_inner_epochs=1。
@@ -243,28 +36,12 @@ SD3.5-Medium；512×512；LoRA r=32、alpha=64；seed=42；fp16；lr=3e-4；temp
 log_raw_data=True；实际裁剪按 energy_before_clip 与 energy_used 判断；其余环境和参数沿用 A2.9 已验证 runtime config。","config/awr_energy_clip.py
 scripts/train_awr_sd3_energy_clip.py
 scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh
-flow_grpo/stat_tracking.py（np.clip）",bash scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh --config.train.energy_min=-0.7 --config.train.energy_max=5.0 --config.run_name=flowawr_sd3_pickscore_eclip_m0.7_p5,flowawr_sd3_pickscore_eclip_m0.7_p5,"最新TensorBoard（2026-10-27T05:41:38.347133+00:00固定快照）：eval_reward_pickscore Eval step 30，原始PickScore=22.686904668807983（日志值×26）；共4个有效Eval点；来源UID=ea79f128-6057-4d96-b197-ed668003f86d。平台只读核验=2026-10-27T05:34:47.395456+00:00，Running/Ready。本次仅刷新标量结果，逐样本raw及D/C/R/gradient/positive_coefficient诊断采集范围未刷新。校验：utp/receipts/tensorboard-refresh-20261027-latest/scalar-refresh-20261027T054045Z/tensorboard-validation.json。
+flow_grpo/stat_tracking.py（np.clip）",bash scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh --config.train.energy_min=-0.7 --config.train.energy_max=5.0 --config.run_name=flowawr_sd3_pickscore_eclip_m0.7_p5,flowawr_sd3_pickscore_eclip_m0.7_p5,"[最新结果同步]北京时间10-29 10:02:27固定快照：Eval step 1820，原始PickScore 24.15680707，共183点；当前UID=4d391771-b12c-44cd-b150-9fa8051e6add。本地TensorBoard已完整导出并核验。已核实从checkpoint 1740续训，边界采用续训段。证据：utp/receipts/all-running-refresh-20261029/inputs.json。逐样本raw/诊断曲线未刷新。[/最新结果同步]
+[运行健康核验]北京时间2026-10-28 21:53:36：Running/Ready，0重启；8个rank有效optimizer更新均前进，step 1326→1363；近期尾部无非有限梯度/AMP跳步/训练致命错误；8×B200功率上限正常。仅更新运行健康状态；Eval/逐样本诊断采集时间沿用原记录。证据：utp/receipts/running-health-20261028-evening/health-summary.json。[/运行健康核验]
+最新TensorBoard（2026-10-28T02:11:41.177249+00:00固定快照）：eval_reward_pickscore Eval step 880，原始PickScore=23.826488733291626（日志值×26）；共89个有效Eval点；来源UID=ea79f128-6057-4d96-b197-ed668003f86d。平台只读核验=2026-10-28T02:08:38.254087+00:00，Running/Ready。逐样本raw及D/C/R/gradient/positive_coefficient诊断保留各自原采集范围。标量校验：/Users/yixuan/Desktop/TunnelWorkspace/FlowAWR/utp/receipts/results-refresh-20261028/publication/VALIDATION.json。
 
 原有提交与训练记录（历史记录，未重新采集）：
 核验时间：2026-10-27T04:52:01.894516+00:00（北京时间12:52）。训练中，已完成1次有效 optimizer 更新（日志 global_step=0），正进行下一轮 epoch 1；8 rank 梯度均有限，grad_norm_before_clip=0.008295400068163872，optimizer_step_skipped=false。8×B200 利用率均100%；显存56496–58912 MiB（55.2–57.5 GiB/卡，每卡总容量183359 MiB）。job=flowawr-a2-1-eclip-b200-mullet-20261027；priority=1000；pod_uid=ea79f128-6057-4d96-b197-ed668003f86d。S3独立根=s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a2-1-eclip-m0p7-p5-b200-mullet-20261027。"
-A2.3,已停止,"FlowAWR，energy 裁剪区间 [−3, 3] 改为 [−0.5, 5]，其他与 A1 相同",main,PickScore（原始分数）,"与 A1 完全相同的训练，唯一改动：energy 的裁剪区间从 [−3, 3] 改为 [−0.5, 5]。temperature 仍为 1，不动任何其他参数。
-原公式 energy = clip(24p − 1, −3, 3)，24p − 1 的最小值是 −1，所以 −3 下界从未生效；+3 上界在 τ=1 下也几乎不生效（step 0 每组裁 0.09 个样本，ckpt-900 为 0）。改成 [−0.5, 5] 后：上界 5 仍然碰不到；下界 −0.5 会把低于 −0.5 的负能量抬到 −0.5，被抬起的样本占比随训练阶段变化，step 0 约 14%，ckpt-900 约 0.2%（能量尺度随训练缩小 3 倍）。
-效果方向：裁负侧使组内能量和由 0 变正（step 0 约 +0.46/组，后期趋近 0），正组和等于把预测向自己的样本拉近，是与 A2.1（负组和、推离自身样本）相反的偏置。探针估计这部分漂移在 step 0 占梯度范数 7%，后期约 1%；去均值后的梯度信噪比与 A1 相同（split-half 余弦 0.055 对 0.055），与 A1 梯度方向余弦 step 0 为 0.99、ckpt-900 为 1.00。
-因此预期差别集中在前约 100 步：Eval 可能略高于 A1、组内奖励 std 下降更快、KL 略高；之后下界基本不再命中，曲线应与 A1 趋同。如果想让负侧裁剪在整个训练中持续生效，需要把下界收紧到 −0.3（step 0 命中 32%、ckpt-900 命中 3.8%），那是另一组实验。
-实现：不改任何已有文件。energy_min/energy_max 是官方 PerPromptStatTracker 构造函数已有的参数（默认 ±3），官方配置和训练脚本没有设置它们。本次新建 config/awr_energy_clip.py（在 sd3_pickscore 基础上设 energy_min=−0.5、energy_max=5）和 scripts/train_awr_sd3_energy_clip.py（train_awr_sd3.py 的副本，唯一改动是构造 tracker 时传入这两个值），以及对应启动器。裁剪逻辑本身（flow_grpo/stat_tracking.py 第 75 行 np.clip）与官方一致、未改。","GPU：与 A1 同一集群、同一卡数、同一每轮样本数（1152 张，每轮 1 次更新）
-配置入口：config/awr_energy_clip.py:sd3_pickscore_eclip_m0p5_p5（= sd3_pickscore + energy_min=−0.5、energy_max=5）
-seed=42；fp16；lr=3e-4；KL 系数 1e-4；max_grad_norm=1；EMA=True；temperature=1；global_std=True；adv_clip_max=5
-训练/评估采样步数 10/40；guidance_scale=1.0；deterministic DPM2；timestep_fraction=0.99；num_inner_epochs=1
-log_raw_data=True（raw_data 里的 energy_before_clip 与 energy_used 可离线算出 −0.5 下界的命中率；日志标量 energy_clip_rate 按 |e| ≥ 2.99 统计，不反映该下界）
-每 10 轮评估/保存；至少跑到 300 轮（差别预期在前 100 步，300 轮足够看到是否趋同）
-基线：A1（同集群、同 seed、同采样器，prompt 顺序逐步一致，可做逐步残差）","config/awr_energy_clip.py（新建：sd3_pickscore + train.energy_min=−0.5 / train.energy_max=5）
-scripts/train_awr_sd3_energy_clip.py（新建：train_awr_sd3.py 副本，仅 tracker 构造处传入 energy_min/energy_max）
-scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh（新建：A1 启动器副本，换用上述脚本与配置）
-flow_grpo/stat_tracking.py 第 75 行（np.clip(energies_reranged, energy_min, energy_max)，与官方一致，未改）",bash scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh,flowawr_sd3_pickscore_eclip_m0.5_p5,"[2026-10-26 A2.3 checkpoint1590 近似续训结果]\n本地快照 2026-10-26T12:45:23.396384+00:00；Eval 共 166 点，step 0–1650；最新 PickScore=24.0766756535（eval_reward_pickscore×26）。\n父段保留 step<1590，续训段采用 step≥1590；边界采用续训段原始评估，未平均、未平滑、未补点。\n原8×H100、energy[−0.5,5]、lr=3e-4、1152图/更新；恢复EMA LoRA、AdamW、AMP scaler和global_step，原current/old及RNG/采样位置未保存，属于近似续训。\n当前attempt已核验61次有效更新（before1590–1650，after1651），8rank全部finite且未跳过。\njob=flowawr-a2-3-h100-resume1590-20261026；attempt=80fa461d-c88a-495f-8c8d-b3898e2bfe28。\n证据：utp/receipts/a2-3-results-20261026/new-result-verification.json；网页：exp_results/results_curves.html
-
-[2026-10-26 A2.3 用户停止]
-2026-10-26T13:04:41.706212+00:00 已核实停止；不再自动续训。原有科学结果及采集时间保留。独立重跑编号 A2.3.1。
-证据：utp/receipts/a2-3-1-20261026/a23-after-stop-pods.json"
 A2.3.1,训练中,"A2.3 从0独立重跑；energy [−0.5, 5]；UTP 8×B200",A2.3 冻结源码 SHA256=1834b1af0a4b3c3e0ac44874a79c6451d43862b5515fd6647139e00f3c13cf54,PickScore（原始分数）,"与 A1 完全相同的训练，唯一改动：energy 的裁剪区间从 [−3, 3] 改为 [−0.5, 5]。temperature 仍为 1，不动任何其他参数。
 原公式 energy = clip(24p − 1, −3, 3)，24p − 1 的最小值是 −1，所以 −3 下界从未生效；+3 上界在 τ=1 下也几乎不生效（step 0 每组裁 0.09 个样本，ckpt-900 为 0）。改成 [−0.5, 5] 后：上界 5 仍然碰不到；下界 −0.5 会把低于 −0.5 的负能量抬到 −0.5，被抬起的样本占比随训练阶段变化，step 0 约 14%，ckpt-900 约 0.2%（能量尺度随训练缩小 3 倍）。
 效果方向：裁负侧使组内能量和由 0 变正（step 0 约 +0.46/组，后期趋近 0），正组和等于把预测向自己的样本拉近，是与 A2.1（负组和、推离自身样本）相反的偏置。探针估计这部分漂移在 step 0 占梯度范数 7%，后期约 1%；去均值后的梯度信噪比与 A1 相同（split-half 余弦 0.055 对 0.055），与 A1 梯度方向余弦 step 0 为 0.99、ckpt-900 为 1.00。
@@ -279,7 +56,9 @@ log_raw_data=True（raw_data 里的 energy_before_clip 与 energy_used 可离线
 独立身份 A2.3.1；从0训练，seed=42，resume_from=''；科学算法及参数沿用 A2.3；不拼接旧结果。","config/awr_energy_clip.py（新建：sd3_pickscore + train.energy_min=−0.5 / train.energy_max=5）
 scripts/train_awr_sd3_energy_clip.py（新建：train_awr_sd3.py 副本，仅 tracker 构造处传入 energy_min/energy_max）
 scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh（新建：A1 启动器副本，换用上述脚本与配置）
-flow_grpo/stat_tracking.py 第 75 行（np.clip(energies_reranged, energy_min, energy_max)，与官方一致，未改）",bash staging/runtime/run_training_a231_blackwell.sh（原A2.3 launcher）,flowawr_sd3_pickscore_eclip_m0p5_p5_a2_3_1,"最新TensorBoard（2026-10-27T05:42:12.848046+00:00固定快照）：eval_reward_pickscore Eval step 660，原始PickScore=23.855801701545715（日志值×26）；共67个有效Eval点；来源UID=762f01f9-d814-4beb-aa96-b0e96db907b4。平台只读核验=2026-10-27T05:34:47.395456+00:00，Running/Ready。本次仅刷新标量结果，逐样本raw及D/C/R/gradient/positive_coefficient诊断采集范围未刷新。校验：utp/receipts/tensorboard-refresh-20261027-latest/scalar-refresh-20261027T054045Z/tensorboard-validation.json。
+flow_grpo/stat_tracking.py 第 75 行（np.clip(energies_reranged, energy_min, energy_max)，与官方一致，未改）",bash staging/runtime/run_training_a231_blackwell.sh（原A2.3 launcher）,flowawr_sd3_pickscore_eclip_m0p5_p5_a2_3_1,"[最新结果同步]北京时间10-29 10:02:26固定快照：Eval step 2490，原始PickScore 23.97957635，共250点；当前UID=762f01f9-d814-4beb-aa96-b0e96db907b4。本地TensorBoard已完整导出并核验。证据：utp/receipts/all-running-refresh-20261029/inputs.json。逐样本raw/诊断曲线未刷新。[/最新结果同步]
+[运行健康核验]北京时间2026-10-28 21:53:36：Running/Ready，0重启；8个rank有效optimizer更新均前进，step 1953→1989；近期尾部无非有限梯度/AMP跳步/训练致命错误；8×B200功率上限正常。仅更新运行健康状态；Eval/逐样本诊断采集时间沿用原记录。证据：utp/receipts/running-health-20261028-evening/health-summary.json。[/运行健康核验]
+最新TensorBoard（2026-10-28T10:11:29.912345+00:00固定快照）：eval_reward_pickscore Eval step 1830，原始PickScore=23.982677340507507（日志值×26）；共184个有效Eval点；来源UID=762f01f9-d814-4beb-aa96-b0e96db907b4。平台只读核验=2026-10-28T10:11:11.197307+00:00，Running。逐样本raw及D/C/R/gradient/positive_coefficient诊断保留各自原采集范围。标量校验：/Users/yixuan/Desktop/TunnelWorkspace/FlowAWR/utp/receipts/a2-3-1-refresh-20261028-latest/publication_validation.json。
 
 原有提交与训练记录（历史记录，未重新采集）：
 [2026-10-26 A2.3.1 从0独立重跑]
@@ -287,66 +66,6 @@ flow_grpo/stat_tracking.py 第 75 行（np.clip(energies_reranged, energy_min, e
 job=flowawr-a2-3-1-eclip-b200-mullet-20261026；cluster=p-syd-mullet；GPU=8×B200。
 提交：2026-10-26T13:05:50Z；状态核验：2026-10-26T14:00:33.522614+00:00。
 证据：utp/receipts/a2-3-1-20261026/submission-request.json"
-A2.4,已停止,"FlowAWR，energy 裁剪区间 [−3, 3] 改为 [−3, 1]，其他与 A1 相同",main,PickScore（原始分数）,"与 A1 完全相同的训练，唯一改动：energy 的裁剪区间从 [−3, 3] 改为 [−3, 1]。temperature 仍为 1，不动任何其他参数。
-原公式 energy = clip(24p − 1, −3, 3)，24p − 1 的最小值是 −1，所以 −3 下界从未生效，本实验只有 +1 上界在起作用：energy ≤ 1 等价于组内 softmax 概率 p ≤ 1/12，即最多只能是均匀概率（1/24）的 2 倍；原来的 +3 允许到 1/6。A1 的 raw_data（0 到 845 轮，975,744 个样本）里 24p − 1 超过 1 的比例：step 0 为 5.4%（每组 1.29 个样本，裁后组内能量和 −0.64/组，最差一组 −3.0）；第 1 到 9 轮 1.5%；第 10 到 29 轮 0.6%；第 100 轮以后约 0.1% 到 0.2%（每组 0.03 个，组和 −0.01）。按 10 轮窗口看，命中率在第 40 轮后低于 0.5%、第 130 轮后低于 0.1%。所以这个改动基本只在最初几十步生效，之后与 A1 几乎相同；后期偶尔有单个样本的 24p − 1 冲到 3 以上（A1 第 400 轮后最大 6.7，占比不到 0.1%），这种样本会被压到 1 而不是 3。
-效果方向：只裁正侧会让组内能量和由 0 变负，这与 A2.1 失败的方向相同（负组和 = 把预测推离自己的样本），但幅度小得多：step 0 组和 −0.64/组，A2.1 是 −4.7/组；负能量样本比例仍是 58%，A2.1 是 76%。用 P2 探针（step 0）估计：这部分漂移占梯度范数 15%（A1 1%、A2.3 7%、A2.1 38%），梯度与 A1 的余弦 0.96，范数是 A1 的 0.84 倍（组内最好样本的拉力被削掉一截）；ckpt-900 上与 A1 余弦 1.00、无命中。因此预期：前约 50 步 Eval 上升可能略慢、KL 略高，之后与 A1 趋同；不预期塌缩，也不预期优于 A1。
-与 A2.3 互为镜像：A2.3 裁负侧得到正组和（step 0 +0.40/组），A2.4 裁正侧得到负组和（−0.64/组），两组在同一 τ=1 下分别检验组和偏置的正负两个方向，与 A1 一起对照。
-实现：不新建、不修改任何文件。复用 A2.3 的配置入口与训练脚本，用命令行覆盖 train.energy_min=−3、train.energy_max=1（与 A2.1 用命令行覆盖 temperature 是同一种做法），已在本地验证解析结果为 energy_min=−3.0、energy_max=1.0、run_name 以最后一个参数为准。裁剪逻辑本身（flow_grpo/stat_tracking.py 第 75 行 np.clip）与官方一致、未改。","GPU：与 A1 同一集群、同一卡数、同一每轮样本数（1152 张，每轮 1 次更新）
-配置入口：config/awr_energy_clip.py:sd3_pickscore_eclip_m0p5_p5 加命令行覆盖 --config.train.energy_min=-3.0 --config.train.energy_max=1.0（配置名仍是 A2.3 的，实际生效值以保存的 config.json 为准：energy_min=−3、energy_max=1）
-启动器打印的区间说明仍是 A2.3 的 [−0.5, 5]，不影响实际配置
-16 卡两节点按合作者原命令：torchrun --nnodes=2 ... scripts/train_awr_sd3_energy_clip.py --config=config/awr_energy_clip.py:sd3_pickscore_eclip_m0p5_p5 --config.train.energy_min=-3.0 --config.train.energy_max=1.0 --config.sample.num_batches_per_epoch=8 --config.train.gradient_accumulation_steps=8 --config.run_name=flowawr_sd3_pickscore_eclip_m3_p1
-seed=42；fp16；lr=3e-4；KL 系数 1e-4；max_grad_norm=1；EMA=True；temperature=1；global_std=True；adv_clip_max=5
-训练/评估采样步数 10/40；guidance_scale=1.0；deterministic DPM2；timestep_fraction=0.99；num_inner_epochs=1
-log_raw_data=True（raw_data 里 energy_before_clip 与 energy_used 的差即 +1 上界的命中；日志标量 energy_clip_rate 按 |e| ≥ 2.99 统计，本实验下会接近 0，不反映该上界）
-每 10 轮评估/保存；至少跑到 300 轮（差别预期在前 50 步，300 轮足够看到是否趋同）
-基线：A1（同集群、同 seed、同采样器，prompt 顺序逐步一致，可做逐步残差）；对照：A2.3","config/awr_energy_clip.py（已有，A2.3 新建；train.energy_min / train.energy_max 两个键由命令行覆盖为 −3 / 1）
-scripts/train_awr_sd3_energy_clip.py（已有，A2.3 新建；构造 tracker 时传入 energy_min/energy_max）
-scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh（已有，A2.4 复用，尾部参数覆盖）
-flow_grpo/stat_tracking.py 第 75 行（np.clip(energies_reranged, energy_min, energy_max)，与官方一致，未改）",bash scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh --config.train.energy_min=-3.0 --config.train.energy_max=1.0 --config.run_name=flowawr_sd3_pickscore_eclip_m3_p1,flowawr_sd3_pickscore_eclip_m3_p1,"1. Eval 全程落后 A1 约 0.2 到 0.35：第 50/100/300/600/950 步为 22.63/22.91/23.37/23.58/23.71，A1 为 22.90/23.20/23.59/23.79/23.95。差距在前 100 步形成（60 到 100 步 −0.35）后不再收敛，100 到 950 步两者涨幅相同（A1 +0.75、A2.4 +0.80），即亏损是在上界最活跃的前几十步一次性形成的。训练集 reward_avg 同样落后 0.21 到 0.31。
-2. KL 与稳定性变差：20 到 400 步 KL 是 A1 的 2 到 3 倍（51 到 100 步 0.225 对 0.081），400 到 700 步 1.2 倍，700 步后略低于 A1。300 到 700 步 old_deviate_max 超过 0.2 的尖峰 38 次（A1 同期 3 次），第 672 步达 6.8，随后 Eval 回撤 0.11（680 到 750 步），到 850 步恢复；A1 到 960 步无超过 0.05 的回撤。
-3. 上界活性与预期一致，只在早期有量：组和代理 energy_mean × 24 在 1 到 10 步为 −0.21，11 到 20 步 −0.03，之后持续约 −0.01；A1 raw_data（0 到 2125 轮）上 +1 命中率 step 0 为 5.4%（每组 1.29 个，裁后组和 −0.64），1 到 10 轮 1.5%，300 轮后约 0.1%（每组 0.02 个，组和 −0.005）。与预期不一致的是后果：方法说明写的是前 50 步略慢、KL 略高、之后趋同、不预期塌缩，实际是永久落后 0.2 分、KL 翻倍、中段反复尖峰。
-4. 与 A2.3 构成方向不对称：同量级的正组和（A2.3，+0.20 衰减到 +0.015）使 KL 降 25%、Eval 不变；负组和（A2.4，−0.21 衰减到 −0.01）使 KL 翻倍、Eval 永久落后。把预测推离自己的样本是正反馈，与 A2.1 塌缩同向，只是幅度小约 20 倍所以没塌；拉向自己的样本是负反馈，自行收敛。组内能量和的符号比大小重要得多。
-保留项：无 B200 上的 A1 对照，硬件数值差异不能完全排除（同机跑 A1 一百步约 2 小时即可排除），但早期 KL 差距随组和同步出现、方向与 A2.1 一致，主因判断为裁剪。KL 曲线在大尖峰后突然下台阶（A2.4 的 95/350/680 步，A1 的 707 步也有），机制未明。"
-A2.5,训练中,"FlowAWR，energy 裁剪区间 [−0.5, 3]（SD3 + PickScore）",main,PickScore（原始分数）,"以 A1 单 PickScore 为算法基线，energy = clip(Kp − 1, −0.5, 3)，K 为实际同 prompt 组大小。相对 A1 的 [−3, 3] 仅抬高负侧下界；相对 A2.3 的 [−0.5, 5] 仅把正侧上界恢复到 3。temperature=1，保留原 softmax、loss、KL、EMA 及学习率，不额外归一化或去均值。
-比较 Eval、KL、reward 分布、负侧/正侧裁剪命中率和组内 energy 和；效果待实测。复用已有 A2.3 配置与训练脚本，通过 CLI 覆写，不新建代码。","GPU：已分配 8 张 B200（p-syd-mullet，单节点；Kueue 优先级 1000）。
-默认模型：stabilityai/stable-diffusion-3.5-medium；512×512；LoRA r=32、alpha=64。
-配置入口：config/awr_energy_clip.py:sd3_pickscore_eclip_m0p5_p5，CLI 覆盖 train.energy_min=-0.5、train.energy_max=3.0。配置入口名保留 p5，启动横幅仍显示 [−0.5, 5]，实际生效值以 CLI 覆盖及保存的 config.json 为准。
-seed=42；fp16；lr=3e-4；KL 系数 1e-4；max_grad_norm=1；EMA=True；temperature=1；global_std=True；adv_clip_max=5；hard_gating=False；filter_zero_advantage=False。
-8 卡每卡 batch=9；sample.num_batches_per_epoch=16；gradient_accumulation_steps=16；共 1152 图/epoch，每 epoch 1 次 optimizer 更新，名义每组 24 图。
-训练/评估采样步数 10/40；guidance_scale=1.0；deterministic DPM2；timestep_fraction=0.99；num_inner_epochs=1。
-每 10 epoch 评估/保存（训练脚本将 save_freq 设为 eval_freq）；num_epochs=100000；至少 2000 步为进度目标，达到后继续训练，不自动停止。
-log_raw_data=True；用 energy_before_clip 与 energy_used 分别计算负侧/正侧裁剪命中率，现有 energy_clip_rate 不覆盖 −0.5 下界。
-A1 实际为 16 卡 NVIDIA RTX PRO 6000 Blackwell Server Edition，与本实验计划 8 卡的硬件/布局不同，不能声称逐步 prompt/noise 完全对齐；可按更新数或累计样本比较。","config/awr_energy_clip.py
-scripts/train_awr_sd3_energy_clip.py
-scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh
-flow_grpo/stat_tracking.py（np.clip）",bash scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh --config.train.energy_min=-0.5 --config.train.energy_max=3.0 --config.run_name=flowawr_sd3_pickscore_eclip_m0.5_p3,flowawr_sd3_pickscore_eclip_m0.5_p3,"最新TensorBoard（2026-10-27T05:42:36.062548+00:00固定快照）：eval_reward_pickscore Eval step 2400，原始PickScore=24.071357011795044（日志值×26）；共241个有效Eval点；来源UID=ec5825c6-3e42-41fd-b111-7965cbe55bdc。平台只读核验=2026-10-27T05:34:47.395456+00:00，Running/Ready。本次仅刷新标量结果，逐样本raw及D/C/R/gradient/positive_coefficient诊断采集范围未刷新。校验：utp/receipts/tensorboard-refresh-20261027-latest/scalar-refresh-20261027T054045Z/tensorboard-validation.json。
-八卡最近更新已核验至step 1724，梯度有限且未跳过；来源UID=ec5825c6-3e42-41fd-b111-7965cbe55bdc。
-本次仅刷新标量结果，逐样本raw保留2026-10-26T06:08:16.516031+00:00采集范围。
-网页：exp_results/results_curves.html；校验：utp/receipts/a2-5-results-20261026/"
-A2.6,"已停止","FlowAWR，energy 裁剪区间 [−0.3, 3]（SD3 + PickScore）",main,PickScore（原始分数）,"以 A1 单 PickScore 为算法基线，energy = clip(Kp − 1, −0.3, 3)，K 为实际同 prompt 组大小。相对 A1 的 [−3, 3] 仅抬高负侧下界；相对 A2.5 的 [−0.5, 3] 仅将负侧下界收紧到 −0.3，正侧上界 3 不变。temperature=1，保留原 softmax、loss、KL、EMA 及学习率，不额外归一化或去均值。
-用于比较负向更新强度；比较 Eval、KL、reward 分布、负侧/正侧裁剪命中率和组内 energy 和，效果待实测。复用已有 A2.3 配置与训练脚本，通过 CLI 覆写，不新建代码。","GPU：已分配 8 张 B200（p-syd-mullet，单节点；Kueue 优先级 1000）。
-默认模型：stabilityai/stable-diffusion-3.5-medium；512×512；LoRA r=32、alpha=64。
-配置入口：config/awr_energy_clip.py:sd3_pickscore_eclip_m0p5_p5，CLI 覆盖 train.energy_min=-0.3、train.energy_max=3.0。配置入口名保留 p5，启动横幅仍显示 [−0.5, 5]，实际生效值以 CLI 覆盖及保存的 config.json 为准。
-seed=42；fp16；lr=3e-4；KL 系数 1e-4；max_grad_norm=1；EMA=True；temperature=1；global_std=True；adv_clip_max=5；hard_gating=False；filter_zero_advantage=False。
-8 卡每卡 batch=9；sample.num_batches_per_epoch=16；gradient_accumulation_steps=16；共 1152 图/epoch，每 epoch 1 次 optimizer 更新，名义每组 24 图。
-训练/评估采样步数 10/40；guidance_scale=1.0；deterministic DPM2；timestep_fraction=0.99；num_inner_epochs=1。
-每 10 epoch 评估/保存（训练脚本将 save_freq 设为 eval_freq）；从头训练，不恢复 checkpoint；num_epochs=100000；至少 2000 步为进度目标，达到后继续训练，不自动停止。
-log_raw_data=True；用 energy_before_clip 与 energy_used 分别计算负侧/正侧裁剪命中率，现有 energy_clip_rate 不覆盖 −0.3 下界。
-A1 实际为 16 卡 NVIDIA RTX PRO 6000 Blackwell Server Edition，与本实验计划 8 卡的硬件/布局不同，不能声称逐步 prompt/noise 完全对齐；可按更新数或累计样本比较。","config/awr_energy_clip.py
-scripts/train_awr_sd3_energy_clip.py
-scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh
-flow_grpo/stat_tracking.py（np.clip）",bash scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh --config.train.energy_min=-0.3 --config.train.energy_max=3.0 --config.run_name=flowawr_sd3_pickscore_eclip_m0.3_p3,flowawr_sd3_pickscore_eclip_m0.3_p3,"2026-10-26：A2.7/A2.8 各完成50次有效更新及完整Eval50，用已有A2.5/A2.6作对照。四组均为seed=42、8张B200、1152样本/更新；每个Eval有2048例，prompt顺序对齐，初始Eval逐样本完全一致，均值19.829893。
-测试目的：把A2.5到A2.6的变化拆为“组均值改变”和“组内中心化能量改变”，用A2.7做救援干预、A2.8做反向干预。两者是机制测试，不要求后续方法保留−0.3下界。
-共同输入与分组：沿用原训练循环，先采样并计算一次PickScore，再跨全部rank gather。r_i=PickScore_i/26；a_i=clip((r_i−mean_g(r))/(std_global(r)+1e−4),−5,5)；p_i=exp(a_i/τ)/sum_{j∈g}exp(a_j/τ)，τ=1；x_i=K_g*p_i−1。g按tokenizer解码后的真实prompt字符串分组，K_g取当前实际组大小；重复prompt可能合并成48个样本，不按固定24重排。若输入有时间列，只沿样本轴求组均值，各时间列独立。
-共同参考量：在本实验当前这轮同一批x上计算e5_i=clip(x_i,−0.5,3)、e6_i=clip(x_i,−0.3,3)、d_i=e6_i−e5_i及μ_g=mean_{i∈g}(d_i)。μ_g每轮每组重新计算，不使用历史A2.5/A2.6日志中的均值，也不使用整批1152样本的单一均值。令m5_g=mean_g(e5)、m6_g=mean_g(e6)、c5_i=e5_i−m5_g、c6_i=e6_i−m6_g，则μ_g=m6_g−m5_g。
-A2.7核心公式：e27_i=e6_i−μ_g=m5_g+c6_i。验证恒等式mean_g(e27)=mean_g(e5)，且同组e27_i−e27_j=e6_i−e6_j。它保留A2.6的组内中心化能量，移除相对A2.5新增的均值；恢复的是A2.5均值，不是强制零均值。最终能量允许低于−0.3。
-A2.8核心公式：e28_i=e5_i+μ_g=m6_g+c5_i。验证恒等式mean_g(e28)=mean_g(e6)，且同组e28_i−e28_j=e5_i−e5_j。它保留A2.5的组内中心化能量，只加入A2.6带来的均值增量。最终能量允许超过+3，首轮实际有5/1152例超过3，最大3.092045，属于预期干预。
-最小实现顺序：原tracker仅update一次并取得x与e6；由同一x计算e5；按真实组把mean(e6−e5)广播回组内样本；A2.7返回e6−μ，A2.8返回e5+μ。原奖励、advantage及softmax计算不重复，避免重复更新tracker统计或改变随机调用次序。最终能量不再裁剪、不再归一化，否则上述均值/差值恒等式会被破坏。逐样本保存energy_before_clip、energy_a25、energy_a26、energy_group_mean_increment及energy_used。
-进入损失的方式：target_x0=xhat_old+e_used*(x0−xhat_old)，policy_loss=mean((xhat_current−target_x0)^2)/w，w=stopgrad(max(mean(abs(xhat_current−x0)),1e−5))，均值按单样本latent元素计算。原参考模型KL项、优化器、学习率、old更新和评估EMA沿用原循环。保留组内能量差不等于保留能量比值、正负划分或样本梯度贡献；共同的标量平移会给各样本增加不同的残差方向位移。
-原始PickScore，Eval步数依次为10/20/30/40/50：A2.5=22.154538/22.480453/22.627373/22.736881/22.851874；A2.6=21.544993/19.774212/18.611137/18.393834/18.389627；A2.7=22.159549/22.454885/22.555575/22.657257/22.769669；A2.8=21.644192/20.225710/19.105670/18.698777/18.528920。
-对比结论：A2.7减回新增组均值后恢复到接近A2.5；A2.8只加入该均值增量便重现A2.6的明显退化。Eval50时A2.7仅比A2.5低0.082205，A2.8比A2.5低4.322954、仅比A2.6高0.139294。双向干预共同支持：在此次seed及前50次更新设置下，负侧裁剪新增的组均值上移是A2.6早期退化的主要驱动，组内中心化能量的改变影响较小。
-逐样本证据：A2.8终点2047/2048例低于A2.5，1714/2048例低于共同初始；相比自身Eval10，2028/2048例下降，均值下降3.115271、中位数下降3.072922，双侧各去约10%后的均值仍下降3.087239，属于广泛退化。
-执行核验：A2.7/A2.8均为8个rank各连续更新0–49，无AMP跳步或梯度裁剪；Eval0/10/20/30/40/50均完整。A2.8首轮及末轮公式核验通过；两次短跑完成后任务均已删除。结论限于单seed、50步及EMA PickScore，尚未证明A1后期1180/1690/1800下跌同因，也未证明强制组内零均值更优。"
 A2.9,训练中,"FlowAWR，energy 裁剪区间 [−0.5, 4]，与 A2.3 / A2.5 对照（SD3 + PickScore）",main,PickScore（原始分数）,"沿用 A2.5 的纯 clipping 方法，energy = clip(Kp − 1, −0.5, 4)，K 为当前实际同 prompt 组大小，p 为原组内 softmax 概率。负侧下界固定为 −0.5，比较 A2.5 / A2.9 / A2.3 的正侧上界 3 / 4 / 5，观察早期学习轨迹、后期平台和指标回撤。
 保留原 advantage、temperature=1、softmax、loss、KL、EMA 及学习率，不增加去均值或重归一化。裁剪触发稀疏不预设其影响小。比较 Eval、KL、逐样本 reward、正负侧裁剪事件及组内 energy 分布，效果待实测。
 复用已有配置、训练脚本和启动器，以 CLI 覆盖 energy_max=4.0。","GPU：已分配单节点 8 张 B200（p-syd-mullet；Kueue 优先级 1000）。实际运行环境已核验：PyTorch 2.7.1+cu128 / CUDA 12.8、Transformers 4.40.0，ftfy 未安装；与 A2.5 的实际版本、抽检 token IDs 及 tokenizer 资产哈希一致。历史 A2.3 与 A2.5 的硬件及文本预处理环境不同，跨 run 比较保留这一限制。
@@ -359,7 +78,9 @@ seed=42；fp16；lr=3e-4；KL 系数 1e-4；max_grad_norm=1；EMA=True；tempera
 log_raw_data=True；通过 energy_before_clip 与 energy_used 核对裁剪，分别统计低于 −0.5 和高于 +4 的事件；现有 energy_clip_rate 按 |e|≥2.99 统计，不代表本实验实际裁剪命中率。","config/awr_energy_clip.py
 scripts/train_awr_sd3_energy_clip.py
 scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh
-flow_grpo/stat_tracking.py（np.clip）",bash scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh --config.train.energy_min=-0.5 --config.train.energy_max=4.0 --config.run_name=flowawr_sd3_pickscore_eclip_m0.5_p4,flowawr_sd3_pickscore_eclip_m0.5_p4,最新TensorBoard（2026-10-27T05:42:42.556469+00:00固定快照）：eval_reward_pickscore Eval step 930，原始PickScore=24.012008905410767（日志值×26）；共94个有效Eval点；来源UID=9e3dcb00-aa65-4fe2-b0a0-7642da1d9ce2。平台只读核验=2026-10-27T05:34:47.395456+00:00，Running/Ready。本次仅刷新标量结果，逐样本raw及D/C/R/gradient/positive_coefficient诊断采集范围未刷新。校验：utp/receipts/tensorboard-refresh-20261027-latest/scalar-refresh-20261027T054045Z/tensorboard-validation.json。
+flow_grpo/stat_tracking.py（np.clip）",bash scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh --config.train.energy_min=-0.5 --config.train.energy_max=4.0 --config.run_name=flowawr_sd3_pickscore_eclip_m0.5_p4,flowawr_sd3_pickscore_eclip_m0.5_p4,"[最新结果同步]北京时间10-29 10:02:25固定快照：Eval step 2720，原始PickScore 24.18508792，共273点；当前UID=6695e1b2-9ab6-4a72-8f36-e8b56f9bcb67。本地TensorBoard已完整导出并核验。已核实从checkpoint 2710续训，边界采用续训段。证据：utp/receipts/all-running-refresh-20261029/inputs.json。逐样本raw/诊断曲线未刷新。[/最新结果同步]
+[运行健康核验]北京时间2026-10-28 21:53:35：Running/Ready，0重启；8个rank有效optimizer更新均前进，step 2229→2265；近期尾部无非有限梯度/AMP跳步/训练致命错误；8×B200功率上限正常。仅更新运行健康状态；Eval/逐样本诊断采集时间沿用原记录。证据：utp/receipts/running-health-20261028-evening/health-summary.json。[/运行健康核验]
+最新TensorBoard（2026-10-28T02:09:16.503180+00:00固定快照）：eval_reward_pickscore Eval step 1780，原始PickScore=23.984189867973328（日志值×26）；共179个有效Eval点；来源UID=9e3dcb00-aa65-4fe2-b0a0-7642da1d9ce2。平台只读核验=2026-10-28T02:08:38.254087+00:00，Running/Ready。逐样本raw及D/C/R/gradient/positive_coefficient诊断保留各自原采集范围。标量校验：/Users/yixuan/Desktop/TunnelWorkspace/FlowAWR/utp/receipts/results-refresh-20261028/publication/VALIDATION.json。"
 A2.10,训练中,"FlowAWR，energy 裁剪 [−0.5, 3] 后按组平衡正负总量（SD3 + PickScore）",A2.3冻结90文件 + 4个独立文件；source SHA256 2dc3f95c44b4def51b23135e7e41097b6ee00c51809e9ca2c6861f18dbaec9f7,PickScore（原始分数）,"以 A2.5 的纯 clipping 为对照，沿用 reward=PickScore/26、组内 reward 中心化、全局 reward 标准差+1e-4、advantage 裁剪[-5,5]和温度1；p 为原组内 softmax 概率。
 x_i=K_g*p_i−1；b_i=clip(x_i,−0.5,3)。先跨全部 rank gather，再按 tokenizer 解码后的真实 prompt 字符串分组；K_g 为实际组大小，重复 prompt 可合并为48图等，不按固定24图分块。
 每个实际组、每个时间列独立沿样本轴计算 P_g=sum(max(b_i,0))、N_g=sum(max(−b_i,0))、T_g=min(P_g,N_g)。正侧 scale=T_g/P_g，负侧 scale=T_g/N_g；分母为0时对应scale设0，不加epsilon。
@@ -383,134 +104,56 @@ flow_grpo/pickscore_scorer.py（复用原评分器）
 flow_grpo/rewards.py（复用原奖励）
 scripts/launchers/run_flowawr_sd3_pickscore_balanced_clip_8gpu.sh
 utp/a2-10-pickscore-balanced-clip-b200-mullet-s3.yaml
-utp/runtime/run_training_a210_blackwell.sh（独立B200启动包装）",bash scripts/launchers/run_flowawr_sd3_pickscore_balanced_clip_8gpu.sh,flowawr_sd3_pickscore_balanced_clip_m0p5_p3,"8×B200已实际训练。2026-10-26T08:03:33.252583+00:00只读核验：8个rank各2条完整optimizer更新（global_step_before=0/1），optimizer_step_skipped=False；首/末梯度范数分别0.007032331079244614、0.004737440031021833，均finite。Pod Running/ready、0重启。2304条逐样本weights覆盖epoch 0/1、96组，11个diagnostic字段齐全且finite；实际energy范围[−0.5,3]，平衡后组和绝对值最大约1.6e-15。positive_balance_scale范围[0.7633881139787781,1]、negative_balance_scale范围[0.9106323038020625,1]；各值逐样本保留。首训证据：utp/receipts/a2-10-20261026/startup/first-training-confirmed.json。S3归档heartbeat无error，已确认40chunks/3306639bytes（08:01:38快照，含prompts/samples/weights；不据此声称optimizer日志已上S3）。
-最新TensorBoard（2026-10-27T05:41:36.687306+00:00固定快照）：eval_reward_pickscore Eval step 890，原始PickScore=23.857194900512695（日志值×26）；共90个有效Eval点；来源UID=a340758b-f178-40b2-ac38-67f5c4dad35d。平台只读核验=2026-10-27T05:34:47.395456+00:00，Running/Ready。本次仅刷新标量结果，逐样本raw及D/C/R/gradient/positive_coefficient诊断采集范围未刷新。校验：utp/receipts/tensorboard-refresh-20261027-latest/scalar-refresh-20261027T054045Z/tensorboard-validation.json。"
-A2.11,训练中,"FlowAWR，energy 裁剪区间 [−3, 5]，与 A1 / A2.3 / A2.5 对照（SD3 + PickScore）",main,PickScore（原始分数）,"沿用纯 clipping，energy = clip(Kp − 1, −3, 5)，K 为当前实际同 prompt 组大小，p 为原组内 softmax 概率。与 A2.3 相比仅放宽负侧下界 −0.5→−3，与 A1 相比仅放宽正侧上界 3→5。因 Kp−1 自然大于 −1，−3 下界不触发。用于检验负侧限幅对训练稳定性及回撤的影响。\n保留原 advantage、temperature=1、softmax、loss、KL、EMA 和学习率，不增加去均值或重归一化。复用 A2.5 / A2.9 已验证的 B200 环境与源码归档，结果待实测。",GPU：申请单节点 8×B200，p-syd-mullet，Kueue high-priority（1000）。\n配置入口：config/awr_energy_clip.py:sd3_pickscore_eclip_m0p5_p5，CLI 覆盖 train.energy_min=-3.0、train.energy_max=5.0；实际生效值以保存 config.json 为准。\nSD3.5-Medium；512×512；LoRA r=32、alpha=64；seed=42；fp16；lr=3e-4；KL=1e-4；max_grad_norm=1；EMA=True；temperature=1；global_std=True；adv_clip_max=5；hard_gating=False。\n8 卡每卡 batch=9；sample.num_batches_per_epoch=16；gradient_accumulation_steps=16；1152 图/更新，名义组大小24；每图9个训练时间点。\n训练/评估采样步数10/40；guidance_scale=1；DPM2；noise_level=0.7；num_inner_epochs=1。\n从头训练，每10轮评估/保存，num_epochs=100000。PyTorch 2.7.1/cu128、Transformers 4.40.0，保持与 A2.5/A2.9 一致的 tokenizer 环境。\nlog_raw_data=True；实际裁剪按 energy_before_clip 与 energy_used 判断；energy_clip_rate 的旧2.99阈值不等于本实验裁剪命中率。,config/awr_energy_clip.py\nscripts/train_awr_sd3_energy_clip.py\nscripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh\nflow_grpo/stat_tracking.py,bash scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh --config.train.energy_min=-3.0 --config.train.energy_max=5.0 --config.run_name=flowawr_sd3_pickscore_eclip_m3_p5,flowawr_sd3_pickscore_eclip_m3_p5,"实际8×B200训练已确认；8 rank最新raw optimizer更新未跳步。energy=[−3,5]。
-最新TensorBoard（2026-10-27T05:42:01.898034+00:00固定快照）：eval_reward_pickscore Eval step 890，原始PickScore=23.973050475120544（日志值×26）；共90个有效Eval点；来源UID=88d1ac05-bc94-4cad-8249-1ce7de2e2195。平台只读核验=2026-10-27T05:34:47.395456+00:00，Running/Ready。本次仅刷新标量结果，逐样本raw及D/C/R/gradient/positive_coefficient诊断采集范围未刷新。校验：utp/receipts/tensorboard-refresh-20261027-latest/scalar-refresh-20261027T054045Z/tensorboard-validation.json。"
-A2.12,训练中,FlowAWR，负侧 energy 下界按 cosine 从 −0.5 收紧至 −0.4（step 800–1200），正侧固定 +5（SD3 + PickScore）,main + 独立 cosine 配置、训练入口和启动器；复用现有 tracker，不修改基线代码,PickScore（原始分数；评估日志分数 ×26）,"继承 A2.3 的纯 energy clipping 配置，仅增加与数据无关的负侧下界调度。K 为实际同 prompt 组大小，p=softmax(advantage/temperature)，raw_energy=Kp−1。
+utp/runtime/run_training_a210_blackwell.sh（独立B200启动包装）",bash scripts/launchers/run_flowawr_sd3_pickscore_balanced_clip_8gpu.sh,flowawr_sd3_pickscore_balanced_clip_m0p5_p3,"[最新结果同步]北京时间10-29 10:02:26固定快照：Eval step 2660，原始PickScore 24.17682636，共267点；当前UID=d5a932db-c90d-4aac-a069-fab5887c19a9。本地TensorBoard已完整导出并核验。已核实从checkpoint 2660续训，边界采用续训段。A2.10 新节点8张B200均被软件限功率至200W（默认1000W），训练仍推进但明显变慢。证据：utp/receipts/all-running-refresh-20261029/inputs.json。逐样本raw/诊断曲线未刷新。[/最新结果同步]
+[运行健康核验]北京时间2026-10-28 21:53:35：Running/Ready，0重启；8个rank有效optimizer更新均前进，step 2182→2219；近期尾部无非有限梯度/AMP跳步/训练致命错误；8×B200功率上限正常。仅更新运行健康状态；Eval/逐样本诊断采集时间沿用原记录。证据：utp/receipts/running-health-20261028-evening/health-summary.json。[/运行健康核验]
+8×B200已实际训练。2026-10-26T08:03:33.252583+00:00只读核验：8个rank各2条完整optimizer更新（global_step_before=0/1），optimizer_step_skipped=False；首/末梯度范数分别0.007032331079244614、0.004737440031021833，均finite。Pod Running/ready、0重启。2304条逐样本weights覆盖epoch 0/1、96组，11个diagnostic字段齐全且finite；实际energy范围[−0.5,3]，平衡后组和绝对值最大约1.6e-15。positive_balance_scale范围[0.7633881139787781,1]、negative_balance_scale范围[0.9106323038020625,1]；各值逐样本保留。首训证据：utp/receipts/a2-10-20261026/startup/first-training-confirmed.json。S3归档heartbeat无error，已确认40chunks/3306639bytes（08:01:38快照，含prompts/samples/weights；不据此声称optimizer日志已上S3）。
+最新TensorBoard（2026-10-28T02:09:16.592312+00:00固定快照）：eval_reward_pickscore Eval step 1730，原始PickScore=24.150381922721863（日志值×26）；共174个有效Eval点；来源UID=a340758b-f178-40b2-ac38-67f5c4dad35d。平台只读核验=2026-10-28T02:08:38.254087+00:00，Running/Ready。逐样本raw及D/C/R/gradient/positive_coefficient诊断保留各自原采集范围。标量校验：/Users/yixuan/Desktop/TunnelWorkspace/FlowAWR/utp/receipts/results-refresh-20261028/publication/VALIDATION.json。"
+A2.12,训练中,FlowAWR，cosine下界−0.5→−0.4（step800–1200），上界+5；8×H100，从头训练,逐字节复用原cosine实验冻结源码 SHA256=0376ae032a36ec42cae01a3e7b288c09e13bee0a2c88bc251ac81ca228a15ecb,PickScore（原始分数；评估日志分数 ×26）,"继承 A2.3 的纯 energy clipping 配置，仅增加与数据无关的负侧下界调度。K 为实际同 prompt 组大小，p=softmax(advantage/temperature)，raw_energy=Kp−1。
 u=clip((global_step−800)/400,0,1)；lower=−0.5+0.1×(1−cos(πu))/2；energy_used=clip(raw_energy,lower,5)。global_step≤800 保持 −0.5，800–1200 以半余弦过渡，global_step≥1200 保持 −0.4；正侧上界始终为 +5。
 每次 rollout 在 stat_tracker.update 前按当前 global_step 更新实际下界；续训时沿用恢复的 global_step。global_step 沿用原训练计数逻辑，AMP 跳过更新时也可能递增。
-保留原 advantage、softmax、loss、KL、EMA 和学习率；不减均值、不平衡正负总量、不重新分配被裁剪部分。目标是后期适度处理异常负尾，实际裁剪比例和效果待训练验证。","GPU：已分配单节点 8×NVIDIA B200；cluster=p-syd-mullet；Kueue high-priority=1000，b200-tas，已获准运行。
-配置入口：config/awr_energy_clip_cosine.py:sd3_pickscore_eclip_cosine；train.energy_min=−0.5、energy_min_final=−0.4、energy_min_cosine_start_step=800、energy_min_cosine_end_step=1200、energy_max=5。保存配置中的 energy_min 保留初值，实际下界以 energy_clip/lower_bound 日志为准。
-模型：stabilityai/stable-diffusion-3.5-medium；512×512；LoRA r=32、alpha=64；dataset/pickscore。seed=42；fp16；lr=3e−4；KL=1e−4；max_grad_norm=1；EMA=True；decay_type=1。
-8 卡每卡采样/训练 batch=9；sample.num_batches_per_epoch=16；gradient_accumulation_steps=16；1152 图/rollout，名义 48 组×24 图，重复 prompt 可合并；num_inner_epochs=1，名义每轮 1 次 optimizer 更新。
-训练/评估采样步数=10/40；guidance_scale=1；deterministic DPM2；noise_level=0.7；timestep_fraction=0.99，每样本训练 9 个时间点。global_std=True；adv_clip_max=5；temperature=1；energy_mode=True；hard_gating=False；gdpo=False；filter_zero_advantage=False。
-从头训练，resume_from 为空；计划至少 2000 step，不设置 2000-step 自动停止；num_epochs 默认 100000。每 10 epoch 评估/保存 checkpoint（trainer 将 save_freq 设为 eval_freq）。
-log_raw_data=True，沿用逐样本 samples/weights/training_terms 日志。额外记录 energy_clip/lower_bound、upper_bound、negative_rate、positive_rate、mean_shift；命中率按裁剪前 energy 与当步实际上下界比较。
-启动器沿用已有环境激活流程；已通过 UTP 提交至 p-syd-mullet，当前处于镜像拉取与环境准备阶段。启动器默认 SAVE_DIR=${LOG_ROOT}/sd3/pickscore，实际输出在 SAVE_DIR/run_name/<timestamp>。","config/awr_energy_clip_cosine.py
+保留原 advantage、softmax、loss、KL、EMA 和学习率；不减均值、不平衡正负总量、不重新分配被裁剪部分。目标是后期适度处理异常负尾，实际裁剪比例和效果待训练验证。",UTP general-aws-usw2-prod-0；单节点8×H100；80CPU/180Gi；priority1000。复用已验证Hopper torch2.6.0/cu124环境。fresh seed42，resume_from为空；1152图/更新，原cosine及其余训练参数不变。独立S3=s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a2-12-1-h100-usw2-20261028,"config/awr_energy_clip_cosine.py
 scripts/train_awr_sd3_energy_clip_cosine.py
 flow_grpo/stat_tracking.py（复用实际裁剪与组内权重逻辑）
 flow_grpo/pickscore_logging.py（复用逐样本日志）
-scripts/launchers/run_flowawr_sd3_pickscore_eclip_cosine_8gpu.sh",bash scripts/launchers/run_flowawr_sd3_pickscore_eclip_cosine_8gpu.sh,flowawr_sd3_pickscore_eclip_cosine_m0p5_m0p4_s800_e1200_p5,"最新TensorBoard（2026-10-27T05:42:08.864615+00:00固定快照）：eval_reward_pickscore Eval step 90，原始PickScore=23.132957696914673（日志值×26）；共10个有效Eval点；来源UID=a15f3846-e6cc-4b3b-a921-4856ce3ceaca。平台只读核验=2026-10-27T05:34:47.395456+00:00，Running/Ready。本次仅刷新标量结果，逐样本raw及D/C/R/gradient/positive_coefficient诊断采集范围未刷新。校验：utp/receipts/tensorboard-refresh-20261027-latest/scalar-refresh-20261027T054045Z/tensorboard-validation.json。
+scripts/launchers/run_flowawr_sd3_pickscore_eclip_cosine_8gpu.sh",arnold submit -f utp/a2-12-1-pickscore-cosine-h100-usw2-s3.yaml --application-id core-cn --project-id flowawr --cluster general-aws-usw2-prod-0 --namespace b-core-cn-prod --job-name flowawr-a2-12-1-cosine-h100-20261028 --priority high --no-wait,flowawr_sd3_pickscore_eclip_cosine_m0p5_m0p4_s800_e1200_p5_a2_12_1,"[最新结果同步]北京时间10-29 10:10:46固定快照：Eval step 610，原始PickScore 23.80368614，共62点；当前UID=8d81b2b2-5cfe-4760-b90c-7478a7600f5c。本地TensorBoard已完整导出并核验。证据：utp/receipts/all-running-refresh-20261029/inputs.json。逐样本raw/诊断曲线未刷新。[/最新结果同步]
+[运行健康核验]北京时间2026-10-28 21:52:07：Running/Ready，0重启；8个rank有效optimizer更新均前进，step 259→283；近期尾部无非有限梯度/AMP跳步/训练致命错误；8×H100功率上限正常。仅更新运行健康状态；Eval/逐样本诊断采集时间沿用原记录。证据：utp/receipts/running-health-20261028-evening/health-summary.json。[/运行健康核验]
+最新TensorBoard（2026-10-28T11:16:48.312969+00:00固定快照）：当前H100独立重跑，Eval step 210，原始PickScore=23.47094405，共22点；来源UID=8d81b2b2-5cfe-4760-b90c-7478a7600f5c。平台2026-10-28T11:15:41.464014+00:00核验Running/Ready，8rank末条完整非跳步更新均为step 213（仅尾部核验，不推算历史有效更新总数）。本地TensorBoard=exp_results/A2.12.1/tensorboard/attempts/8d81b2b2-5cfe-4760-b90c-7478a7600f5c/events.out.tfevents.swanlab-scalars.0000；原始日志与全部标量已保存并校验。raw/诊断未刷新；未混入已删除的旧B200实验。证据：utp/receipts/a2-12-refresh-20261028-latest/。
 
-原有提交与训练记录（历史记录，未重新采集）：
-2026-10-26 UTP 已正式提交并获准分配单节点 8×B200，p-syd-mullet，high-priority=1000，b200-tas。JobSet：flowawr-a2-12-cosine-b200-mullet-20261026；Pod：flowawr-a2-12-cosine-b200-mullet-20261026-workers-0-0-9k6tk；node：mi-0ec01b135f12af908。独立 S3 输出前缀：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a2-12-b200-mullet-20261026。容器已启动，启动包已发布并校验；模型与环境准备中，尚未确认首个训练更新。"
-A3.1,"已停止",FlowAWR + rarity（SD3 + PickScore，逐样本 log）,main,PickScore（原始分数）,"在 A1 的 FlowAWR 单 PickScore energy 分支上加入 docs/rarity.tex 的 rarity 调制；使用独立核心文件副本，原始文件保留。
-沿用 reward=PickScore/26、全局 reward std+1e-4、组内中心化、advantage 裁剪[-5,5]及温度1；w=K×softmax(advantage)，delta=w−1，先保留未裁剪的 delta。
-特征为同一次 PickScore 前向得到的固定、L2 归一化图像 embedding；在同 prompt 组内做 Gaussian leave-one-out KDE，排除自身，使用全部样本且不按 reward 筛选；s=max(1−p_hat/mean(p_hat),0)。
-先调制 b_raw=delta+s×abs(delta)，再裁剪 b=clip(b_raw,-3,3)；正 delta 乘(1+s)，负 delta 乘(1−s)，不额外归一化或强制组和为零。
-target_x0=pred_x0_old+b×(x0−pred_x0_old)；原 loss、KL、采样、optimizer、梯度裁剪及 EMA 保持一致。按本轮所有 rank 解码后的 prompt 分组，重复 prompt 沿用原逻辑合并，K取实际组大小。","GPU：默认 8 卡；正式对照需与 A1 匹配 GPU 型号、卡数及采样/梯度累积布局。现有 A1 raw 为16卡，不能与默认8卡声称逐步 prompt/noise 一致。
-配置入口：config/awr_rarity.py:sd3_pickscore；模型 stabilityai/stable-diffusion-3.5-medium；分辨率512×512；LoRA r=32、alpha=64。
-lr=3e-4；seed=42；fp16；KL系数=1e-4；max_grad_norm=1；EMA=True；decay_type=1。
-默认8卡：每卡采样/训练 batch=9；rollout batches=16；梯度累积=16；每 epoch 48组×24图=1152图；inner_epochs=1；每 epoch 1次 optimizer 更新。
-若按16卡A1对照：使用同一16卡分布式启动布局，并将 sample.num_batches_per_epoch=8、train.gradient_accumulation_steps=8，保持每轮1152图。
-训练/评估采样步数=10/40；guidance_scale=1.0；训练 deterministic DPM2；noise_level=0.7；timestep_fraction=0.99，每样本训练9个时间点。
-global_std=True；adv_clip_max=5；temperature=1；energy_mode=True；hard_gating=False；filter_zero_advantage=False；gdpo=False。
-rarity.enabled=True；feature_type=pickscore_normalized；bandwidth=0.14，训练全程固定；epsilon_minus=3；epsilon_plus=3。
-h由独立初始模型探针首轮确定：h=sqrt(median_g(median_{i<j}(||z_i−z_j||²))/2)≈0.1352，取两位有效数字0.14；第二轮只验证，不参与选值；不使用奖励选择带宽。
-log_raw_data=True；每个样本写入 weights.jsonl，保留原日志，并新增 rarity_score、rarity_log_density、rarity_density_ratio、rarity_group_size、rarity_energy_before_clip；带 sample_id，不跨样本平均。
-每10 epoch评估/保存（含epoch 0）；num_epochs默认100000，实际结束点待定。","config/awr_rarity.py
-scripts/train_awr_sd3_rarity.py
-flow_grpo/stat_tracking_rarity.py
-flow_grpo/pickscore_scorer_rarity.py
-flow_grpo/rewards_rarity.py
-flow_grpo/pickscore_logging.py（复用原逐样本日志）
-scripts/launchers/run_flowawr_sd3_pickscore_rarity_8gpu.sh",bash scripts/launchers/run_flowawr_sd3_pickscore_rarity_8gpu.sh,flowawr_sd3_pickscore_rarity,
-A3.2,训练中,FlowAWR + 组内去均值 rarity（SD3 + PickScore，逐样本 log）,A3.1不可变源码包 + 4个本地独立文件（未提交）；source SHA256 167bffb73c5c8ff1651548f0e8065c29f0e346337e762dd37a2a06e08ed2a327,PickScore（原始分数）,"以 A3.1 为对照，只将 rarity 增量在当前 prompt 组内去均值，使用独立核心文件副本。
-沿用 reward=PickScore/26、全局 reward std+1e-4、组内中心化、advantage 裁剪[-5,5]及温度1；w=K×softmax(advantage)，delta=w−1，保留未裁剪的 delta。
-沿用同一次 PickScore 前向的固定 L2 归一化图像 embedding，以及同 prompt 全部样本的 Gaussian leave-one-out KDE；s=max(1−p_hat/mean(p_hat),0)，bandwidth=0.14。
-u_i=s_i×abs(delta_i)；u_bar=组内 mean(u)；b_raw=delta+u−u_bar；b=clip(b_raw,-3,3)。在跨 rank gather 后，每个实际 prompt 组内沿样本轴逐时间列计算均值，不跨组或时间列平均。
-裁剪前组内 sum(b_raw)≈0，并保留样本之间的未裁剪系数差值；独立裁剪后不保证零和。去均值可能改变部分系数符号，这是此消融公式的预期行为。
-target_x0=pred_x0_old+b×(x0−pred_x0_old)；原 loss、KL、采样、optimizer、梯度裁剪及 EMA 沿用 A3.1。重复 prompt 沿原逻辑合并，K取实际组大小。","GPU：UTP p-syd-mullet，8×B200；high-priority=1000；独立新训练，无checkpoint resume。
-配置入口：config/awr_rarity_centered.py:sd3_pickscore；模型 stabilityai/stable-diffusion-3.5-medium；分辨率512×512；LoRA r=32、alpha=64。
-lr=3e-4；seed=42；fp16；KL系数=1e-4；max_grad_norm=1；EMA=True；decay_type=1。
-默认8卡：每卡采样/训练 batch=9；rollout batches=16；梯度累积=16；每 epoch 48组×24图=1152图；inner_epochs=1；每 epoch 1次 optimizer 更新。
-训练/评估采样步数=10/40；guidance_scale=1.0；训练 deterministic DPM2；noise_level=0.7；timestep_fraction=0.99，每样本训练9个时间点。
-global_std=True；adv_clip_max=5；temperature=1；energy_mode=True；hard_gating=False；filter_zero_advantage=False；gdpo=False。
-rarity.enabled=True；feature_type=pickscore_normalized；bandwidth=0.14，沿用 A3.1 并全程固定；epsilon_minus=3；epsilon_plus=3。
-log_raw_data=True；沿用逐样本 weights.jsonl：energy_before_clip记录原delta；rarity_energy_before_clip记录delta+u−u_bar；energy_used记录最终裁剪值；rarity_score、rarity_log_density、rarity_density_ratio、rarity_group_size及其他逐样本日志保留。
-每10 epoch评估/保存（含epoch 0）；num_epochs默认100000，实际结束点待定。
-独立保存目录：<logdir>/sd3/pickscore_rarity_centered。","config/awr_rarity_centered.py
-scripts/train_awr_sd3_rarity_centered.py
-flow_grpo/stat_tracking_rarity_centered.py
-flow_grpo/pickscore_scorer_rarity.py（复用A3.1）
-flow_grpo/rewards_rarity.py（复用A3.1）
-flow_grpo/pickscore_logging.py（复用原逐样本日志）
-scripts/launchers/run_flowawr_sd3_pickscore_rarity_centered_8gpu.sh",bash scripts/launchers/run_flowawr_sd3_pickscore_rarity_centered_8gpu.sh,flowawr_sd3_pickscore_rarity_centered,"训练中，已确认1次有效optimizer更新（global_step=0，AMP未跳过）；逐样本日志已归档S3。UTP job=flowawr-a3-2-rarity-b200-mullet-20261026；Pod=flowawr-a3-2-rarity-b200-mullet-20261026-workers-0-0-d6z8q；utp/receipts/a3-2-20261026/startup/20261026T034641Z-training-probe.json。
-最新TensorBoard（2026-10-27T05:42:43.412181+00:00固定快照）：eval_reward_pickscore Eval step 1060，原始PickScore=23.932371854782104（日志值×26）；共107个有效Eval点；来源UID=01f03a04-a2e3-4d47-a41f-1c475d3568fd。平台只读核验=2026-10-27T05:34:47.395456+00:00，Running/Ready。本次仅刷新标量结果，逐样本raw及D/C/R/gradient/positive_coefficient诊断采集范围未刷新。校验：utp/receipts/tensorboard-refresh-20261027-latest/scalar-refresh-20261027T054045Z/tensorboard-validation.json。"
-A4.1,训练中,FlowAWR，归一化分母增加 current–old 偏移项（SD3 + PickScore）,93c268a4bacb3e0c36c6834fa06a269029ab57b7；冻结完整源码，独立 A4.1 入口,PickScore（原始分数；评估日志分数 ×26）,"以 A1 为算法基线，只修改 energy 分支的 policy loss 分母。
+原有启动记录（历史记录）：
+A2.12：8×H100，训练中，从头训练，cosine参数不变。
+核验时间：2026-10-28T03:26:10.279741+00:00；job=flowawr-a2-12-1-cosine-h100-20261028；node=i-04fbe7eb2509fd078.us-west-2.compute.internal。8个rank均确认有效optimizer更新；最少1次，未跳步。
+无可调度的其他B200节点，80/48CPU两次排队均已撤回且未训练。证据：utp/receipts/a2-12-1-20261028/。"
+A4.2,训练中,"A4.1 对照：current–old 偏移归一化，energy clipping 改为 [−0.5, 5]（SD3 + PickScore）","以 A4.1 冻结源码122个成员为基线；A4.2 源码 SHA256=49f00d3e59d2d90c1eeedb29bef1e7cfc1ecaf9a2c8a5fa93d0143f1f6db3718。仅在原路径覆盖 config/awr_offset_norm.py 和 scripts/train_awr_sd3_offset_norm.py 两个文件，接入裁剪参数及对应日志阈值；其余120个成员及原launcher逐字节不变。原launcher通过CLI传入 energy=[−0.5,5]，不新增训练入口。",PickScore（原始分数；评估日志分数 ×26）,"以 A4.1 为直接对照，唯一算法变化为 energy clipping 从 [−3, 3] 改为 [−0.5, 5]；保留 A4.1 的 current–old 偏移归一化分母。
 x0 为 old 多步生成的固定样本 latent；x_current 与 x_old 为两模型对同一加噪输入的干净 latent 预测。
 target=x_old+energy*(x0−x_old)；w=stopgrad(max(mean(abs(x_current−x0))+abs(1−energy)*mean(abs(x_current−x_old)),1e-5))；policy_loss=mean((x_current−target)^2)/w。内部 mean 对单张图的 latent 元素取平均，再对样本及训练时间点平均。
-保留 MAE，不换 RMS，不加新的裁剪阈值；下限作用于两项之和，整个分母不参与求导。current=old 或 energy=1 时恢复原分母。
-energy 沿用 A1：clip(Kp−1,−3,3)，hard_gating=False，K 为实际同 prompt 组大小。reward、advantage、softmax、target、KL、Adam、学习率、采样、old 更新和 EMA 均保持原设置。
-用于检验分母补偿 current–old 偏移后，对异常样本训练强度及后期回撤的影响；实际效果待运行验证。","GPU：UTP p-syd-mullet，单节点 8×NVIDIA B200，high-priority（1000）；1152图/更新。
-配置入口：config/awr_offset_norm.py:sd3_pickscore_offset_norm，继承 awr.sd3_pickscore()，仅 run_name 和 save_dir 不同。
+保留 MAE，不换 RMS；下限作用于两项之和，整个分母不参与求导。current=old 或 energy=1 时恢复原分母。
+energy=clip(Kp−1,−0.5,5)，hard_gating=False，K 为实际同 prompt 组大小。reward、advantage、softmax、target、KL、Adam、学习率、采样、old 更新和 EMA 均保持原设置。
+用于与 A4.1 对比裁剪区间对训练稳定性、奖励提升及回撤的影响；实际效果待运行验证。","GPU：UTP p-syd-mullet，单节点8×B200；1152图/更新；实际优先级=1000。
+复用配置入口：config/awr_offset_norm.py:sd3_pickscore_offset_norm；通过原启动脚本传入 --config.train.energy_min=-0.5 --config.train.energy_max=5，训练器将配置值传给 PerPromptStatTracker。Python 默认值保持 A4.1 的 [-3,3]，其他配置沿用 A4.1。
 模型：stabilityai/stable-diffusion-3.5-medium；512×512；LoRA r=32、alpha=64；dataset/pickscore。seed=42；fp16；lr=3e-4；KL系数=1e-4；max_grad_norm=1；EMA=True；decay_type=1。
 默认 8 卡每卡采样/训练 batch=9；rollout batches=16；梯度累积=16；1152图/epoch，名义48组×24图；num_inner_epochs=1，每epoch 1次optimizer更新。
 训练/评估采样步数=10/40；guidance_scale=1；deterministic DPM2；noise_level=0.7；timestep_fraction=0.99，每图从10个时间点中训练9个。global_std=True；adv_clip_max=5；temperature=1；energy_mode=True；hard_gating=False。
-resume_from 为空；num_epochs 默认100000；每10 epoch评估/保存。log_raw_data=True，沿用逐样本原始日志，training_terms.weight_factor 记录新分母。新增聚合指标 weight_factor_base、weight_factor_offset、weight_factor_scale，分别为原始未截断MAE项、偏移项和原分母/新分母的平均值。
-默认 SAVE_DIR=${LOG_ROOT}/sd3/pickscore_offset_norm，实际输出为 SAVE_DIR/run_name/<timestamp>。
-实际任务：flowawr-a4-1-offset-norm-b200-mullet-20261026
-实际输出：/mnt/shared_storage/jobs/flowawr-a4-1-offset-norm-b200-mullet-20261026/attempts/9bd1e99c-6585-49e1-a085-f64266d66007
-S3归档：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a4-1-b200-mullet-20261026/attempts/9bd1e99c-6585-49e1-a085-f64266d66007/","config/awr_offset_norm.py
+resume_from=""""，seed=42，从头独立训练；num_epochs 默认100000；每10 epoch评估/保存。log_raw_data=True，沿用逐样本原始日志，training_terms.weight_factor 记录新分母。新增聚合指标 weight_factor_base、weight_factor_offset、weight_factor_scale，分别为原始未截断MAE项、偏移项和原分母/新分母的平均值。
+energy_clip_rate 随配置统计 energy<=energy_min+0.01 或 energy>=energy_max-0.01 的比例；A4.2 阈值为 -0.49/4.99，A4.1 默认仍等价于 abs(energy)>=2.99。这是距边界不超过0.01的比例，并非严格的实际裁剪比例；仅影响日志。
+实际任务：flowawr-a4-2-offset-norm-b200-20261028
+实际输出：/mnt/shared_storage/jobs/flowawr-a4-2-offset-norm-b200-20261028/attempts/ad4b8452-f337-46dc-b317-af753b2a2485
+S3归档：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a4-2-b200-20261028/attempts/ad4b8452-f337-46dc-b317-af753b2a2485/
+提交清单：utp/artifacts/a4-2-20261028/a4-2-pickscore-offset-norm-b200-s3.yaml","config/awr_offset_norm.py
 scripts/train_awr_sd3_offset_norm.py
 scripts/launchers/run_flowawr_sd3_pickscore_offset_norm_8gpu.sh
 flow_grpo/stat_tracking.py（复用）
-flow_grpo/pickscore_logging.py（复用）","UTP: utp/a4-1-pickscore-offset-norm-b200-mullet-s3.yaml
-独立启动器: bash scripts/launchers/run_flowawr_sd3_pickscore_offset_norm_8gpu.sh",flowawr_sd3_pickscore_offset_norm,"最新TensorBoard（2026-10-27T05:43:09.934027+00:00固定快照）：eval_reward_pickscore Eval step 660，原始PickScore=23.916670083999634（日志值×26）；共67个有效Eval点；来源UID=9bd1e99c-6585-49e1-a085-f64266d66007。平台只读核验=2026-10-27T05:34:47.395456+00:00，Running/Ready。本次仅刷新标量结果，逐样本raw及D/C/R/gradient/positive_coefficient诊断采集范围未刷新。校验：utp/receipts/tensorboard-refresh-20261027-latest/scalar-refresh-20261027T054045Z/tensorboard-validation.json。
-
-原有提交与训练记录（历史记录，未重新采集）：
-[2026-10-26 A4.1 当前 attempt 状态核验]
-2026-10-26T14:09:01.039068+00:00 核验：当前 attempt 9bd1e99c-6585-49e1-a085-f64266d66007 的8个rank共同完成25次有效optimizer更新（global_step_before 0–24），AMP无跳步，首尾梯度均有限；原attempt进度不累计到本attempt。
-核验时间（UTC）：2026-10-26T14:09:01.039068+00:00
-当前 Pod UID=9bd1e99c-6585-49e1-a085-f64266d66007
-证据：utp/receipts/a4-1-status-20261026-latest/training-probe.json
-本次仅更新运行状态，未新增或刷新科学结果曲线。
-
-历史状态与原 attempt 记录（保留，不代表当前进度）：
-已启动并确认八卡有效 optimizer 更新；累计至少 2 次。
-核验时间（UTC）：2026-10-26T12:51:20.382712+00:00
-启动回执：utp/receipts/a4-1-20261026/first-training-verification.json
-分母改动对训练稳定性和回撤的影响仍待实验结果。
-最新状态核验（UTC）：2026-10-26T13:14:59.348047+00:00。原 Pod 于 2026-10-26T13:05:17Z 被平台抢占，13:09:33Z 重新准入；新 Pod UID=9bd1e99c-6585-49e1-a085-f64266d66007 已 Running，正在准备环境和模型，尚未确认新 attempt 的有效 optimizer 更新。此前八卡有效更新记录属于原 attempt。状态证据：utp/receipts/status-20261026T1310/A4.1-training-latest.json。"
-A3.3,训练中,"FlowAWR + 组内去均值 rarity · clip[-0.5,5]（SD3 + PickScore，逐样本 log）",完全复用 A3.2 不可变源码包（97个成员），source SHA256 167bffb73c5c8ff1651548f0e8065c29f0e346337e762dd37a2a06e08ed2a327。仅启动参数覆盖 rarity.epsilon_minus=0.5、rarity.epsilon_plus=5 及独立 run_name，不新增或改写训练源码、config、core、launcher。,PickScore（原始分数）,"以 A3.2 为对照，唯一算法改动是最终逐样本裁剪边界由[-3,3]改为[-0.5,5]；共享原组内去均值 rarity 核心。
-沿用 reward=PickScore/26、全局 reward std+1e-4、组内中心化、advantage 裁剪[-5,5]及温度1；w=K×softmax(advantage)，delta=w−1，保留未裁剪的 delta。
-沿用同一次 PickScore 前向的固定 L2 归一化图像 embedding，以及同 prompt 全部样本的 Gaussian leave-one-out KDE；s=max(1−p_hat/mean(p_hat),0)，bandwidth=0.14。
-u_i=s_i×abs(delta_i)；u_bar=组内 mean(u)；b_raw=delta+u−u_bar；b=clip(b_raw,-0.5,5)。跨 rank gather 后，每个实际 prompt 组内沿样本轴逐时间列计算均值，不跨组或时间列平均。FP32训练及float64日志重算沿用 A3.2 的同一逻辑。
-裁剪前组内 sum(b_raw)≈0，并保留样本之间的未裁剪系数差值；独立裁剪后不保证零和。去均值可能改变部分系数符号。
-target_x0=pred_x0_old+b×(x0−pred_x0_old)；原 loss、KL、采样、optimizer、梯度裁剪及 EMA 沿用 A3.2。重复 prompt 沿原逻辑合并，K取实际组大小。","GPU：UTP p-syd-mullet，8×B200；high-priority=1000；独立 fresh seed=42 新训练，resume_from=""""，不续checkpoint。
-配置入口：config/awr_rarity_centered.py:sd3_pickscore；模型 stabilityai/stable-diffusion-3.5-medium；分辨率512×512；LoRA r=32、alpha=64。
-lr=3e-4；seed=42；fp16；KL系数=1e-4；max_grad_norm=1；EMA=True；decay_type=1。
-默认8卡：每卡采样/训练 batch=9；rollout batches=16；梯度累积=16；每 epoch 48组×24图=1152图；inner_epochs=1；每 epoch 1次 optimizer 更新。
-训练/评估采样步数=10/40；guidance_scale=1.0；训练 deterministic DPM2；noise_level=0.7；timestep_fraction=0.99，每样本训练9个时间点。
-global_std=True；adv_clip_max=5；temperature=1；energy_mode=True；hard_gating=False；filter_zero_advantage=False；gdpo=False。
-rarity.enabled=True；feature_type=pickscore_normalized；bandwidth=0.14，沿用 A3.2 并全程固定；epsilon_minus=0.5；epsilon_plus=5。
-log_raw_data=True；沿用逐样本 weights.jsonl：energy_before_clip记录原delta；rarity_energy_before_clip记录delta+u−u_bar；energy_used记录最终裁剪值；rarity_score、rarity_log_density、rarity_density_ratio、rarity_group_size及其他逐样本日志保留。
-每10 epoch评估/保存（含epoch 0）；num_epochs默认100000，实际结束点待定。
-独立输出前缀：a3-3-b200-mullet-20261027；run_name=flowawr_sd3_pickscore_rarity_centered_clip05_5。
-其他 A3.2 参数与日志协议不变；不保存feature向量，不新增成对距离日志。","config/awr_rarity_centered.py:sd3_pickscore
-scripts/train_awr_sd3_rarity_centered.py
-flow_grpo/stat_tracking_rarity_centered.py（复用A3.2）
-flow_grpo/pickscore_scorer_rarity.py（复用）
-flow_grpo/rewards_rarity.py（复用）
-flow_grpo/pickscore_logging.py（复用原逐样本日志）
-scripts/launchers/run_flowawr_sd3_pickscore_rarity_centered_8gpu.sh",bash scripts/launchers/run_flowawr_sd3_pickscore_rarity_centered_8gpu.sh --config.rarity.epsilon_minus=0.5 --config.rarity.epsilon_plus=5 --config.run_name=flowawr_sd3_pickscore_rarity_centered_clip05_5,flowawr_sd3_pickscore_rarity_centered_clip05_5,"最新TensorBoard（2026-10-27T05:42:44.894983+00:00固定快照）：eval_reward_pickscore Eval step 20，原始PickScore=22.44077181816101（日志值×26）；共3个有效Eval点；来源UID=5c144a19-6cd4-46f5-afe4-f4ad229ae230。平台只读核验=2026-10-27T05:34:47.395456+00:00，Running/Ready。本次仅刷新标量结果，逐样本raw及D/C/R/gradient/positive_coefficient诊断采集范围未刷新。校验：utp/receipts/tensorboard-refresh-20261027-latest/scalar-refresh-20261027T054045Z/tensorboard-validation.json。
-
-原有提交与训练记录（历史记录，未重新采集）：
-训练中。2026-10-27T05:10:51.558051+00:00固定快照：8个rank共同完成1次有效optimizer更新（global_step=0，AMP跳过=0，各rank梯度均为有限值）。UTP job=flowawr-a3-3-rarity-b200-mullet-20261027；p-syd-mullet，8×B200，priority=1000。
-Pod=flowawr-a3-3-rarity-b200-mullet-20261027-workers-0-0-wndbv；UID=5c144a19-6cd4-46f5-afe4-f4ad229ae230；Running/Ready，容器重启=0。实际配置已核验：epsilon_minus=0.5、epsilon_plus=5、bandwidth=0.14、seed=42、resume_from=""""，run_name=flowawr_sd3_pickscore_rarity_centered_clip05_5；原97成员源码哈希全部一致。
-S3已确认上传16个raw分块，归档状态=catching_up，尚未追平全部增长中的raw数据，无归档错误。训练核验：utp/receipts/a3-3-20261027/startup/training-verified-proof.json。提交回执：utp/receipts/a3-3-20261027/submission-request.json。"
-A3.4.1,训练中,FlowAWR + rarity 只正侧保总量重分配（A3.4 对照组，A1基线）,独立新增文件，随本次提交保存；A1 算法基线。不可变源码包 source SHA256=2be807be7e49365ad04566a4e9721e65baadf0442d8cb283ac562d7a0333c8f5；原 97 个文件保持不变，仅追加 4 个 redistribution 文件。,PickScore（原始分数；评估日志分数×26）,"以 A1 为基线。reward=PickScore/26；adv=(reward−组内均值)/(全局 reward 标准差+1e-4)，裁剪至[-5,5]，temperature=1；b=clip(K×softmax(adv/temperature)−1,-3,3)，先裁剪再重分配。
+flow_grpo/pickscore_logging.py（复用）
+直接复用以上文件，不新增 A4.2 配置、训练器或启动脚本；现有训练器已接入上下界。正在运行的 A4.1 使用原冻结快照。","UTP: utp/artifacts/a4-2-20261028/a4-2-pickscore-offset-norm-b200-s3.yaml
+RUN_NAME=flowawr_sd3_pickscore_offset_norm_eclip_m0p5_p5 SAVE_DIR=""${LOG_ROOT:-$PWD/logs}/sd3/pickscore_offset_norm_eclip_m0p5_p5"" bash scripts/launchers/run_flowawr_sd3_pickscore_offset_norm_8gpu.sh --config.train.energy_min=-0.5 --config.train.energy_max=5",flowawr_sd3_pickscore_offset_norm_eclip_m0p5_p5,"[最新结果同步]北京时间10-29 15:15:24固定快照：Eval step 340，原始PickScore 23.64649951，共35点；当前UID=53676a23-2187-48de-b4ed-8103da62eed5。本地TensorBoard已完整导出并核验。重建前旧运行独立保留。证据：utp/receipts/rebuilt-runs-refresh-20261029-latest/capture-other/A4.2-publication-input.json。逐样本raw/诊断曲线未刷新。[/最新结果同步]
+[运行健康核验]北京时间2026-10-28 21:52:09：Running/Ready，0重启；8个rank有效optimizer更新均前进，step 137→175；近期尾部无非有限梯度/AMP跳步/训练致命错误；8×B200功率上限正常。仅更新运行健康状态；Eval/逐样本诊断采集时间沿用原记录。证据：utp/receipts/running-health-20261028-evening/health-summary.json。[/运行健康核验]
+[A4.2 运行状态]
+训练中；8个rank共同确认至少1次有效optimizer更新（最后step=0）。从头训练，seed=42，resume_from为空；energy=[−0.5,5]，保留A4.1偏移归一化。
+提交：2026-10-28T09:17:56Z；核验：2026-10-28T09:40:04.404711+00:00。
+job=flowawr-a4-2-offset-norm-b200-20261028；Job UID=fbb933ee-b822-4b12-9350-fd90bd310a6f；Pod UID=ad4b8452-f337-46dc-b317-af753b2a2485。
+证据：utp/receipts/a4-2-20261028/startup/20261028T093841-training-probe.json
+本次只同步运行状态，未新增或刷新评估曲线。
+[/A4.2 运行状态]"
+A3.4.1,已停止,FlowAWR + rarity 只正侧保总量重分配（A3.4 对照组，A1基线）,独立新增文件，随本次提交保存；A1 算法基线。不可变源码包 source SHA256=2be807be7e49365ad04566a4e9721e65baadf0442d8cb283ac562d7a0333c8f5；原 97 个文件保持不变，仅追加 4 个 redistribution 文件。,PickScore（原始分数；评估日志分数×26）,"以 A1 为基线。reward=PickScore/26；adv=(reward−组内均值)/(全局 reward 标准差+1e-4)，裁剪至[-5,5]，temperature=1；b=clip(K×softmax(adv/temperature)−1,-3,3)，先裁剪再重分配。
 沿用同一次冻结 PickScore 前向得到的 L2 归一化图像特征，在同 prompt 全部样本上计算 Gaussian leave-one-out KDE，bandwidth=0.14；s=max(1−p_hat/mean(p_hat),0)。跨卡汇总后按解码的 prompt 文本分组，重复 prompt 合并，K取实际组大小。
 仅对 b_i>0：q_i=b_i(1+0.5s_i)，b'_i=min(3,a_plus×q_i)。组内公共正数 a_plus 使正侧系数之和保持 P。b_i≤0 保持原值。用于检验把正侧系数更多分配给稀有好样本的效果。
 每组、每个训练时间列分别保持正侧总量 P=sum(max(b,0)) 和负侧绝对值总量 N=sum(max(-b,0))，保留符号及零系数；不要求 P=N。触及上限后继续分配剩余份额，同侧无重分配空间时保持原值。守恒对象是系数总量。
@@ -531,14 +174,14 @@ config/awr_rarity_redistribution.py:sd3_pickscore_positive
 flow_grpo/rewards_rarity.py（复用）
 flow_grpo/pickscore_scorer_rarity.py（复用）
 flow_grpo/pickscore_logging.py（复用）
-scripts/launchers/run_flowawr_sd3_pickscore_rarity_redistribution_8gpu.sh",bash scripts/launchers/run_flowawr_sd3_pickscore_rarity_redistribution_8gpu.sh --config=config/awr_rarity_redistribution.py:sd3_pickscore_positive,flowawr_sd3_pickscore_rarity_redistribution_positive,训练中，8 个 rank 共同确认 1 次有效 optimizer 更新（global_step=0），AMP 无跳步、梯度有限。UTP job=flowawr-a3-4-1-positive-b200-mullet-20261027；JobUID=fa7e79c8-d43d-460e-b2b6-826c0580fc1c；Pod=flowawr-a3-4-1-positive-b200-mullet-20261027-workers-0-0-dqfc8；PodUID=a878c3c4-2f2b-4bc8-b057-299f82719cb1；核验时间=2026-10-27T06:32:43.153489+00:00。证据：utp/receipts/a3-4-1-20261027/startup/20261027T063243Z-training-probe.json。实际 positive 配置和 101 个源码文件已核验，S3 原始日志已确认上传。首轮系数核验：1152样本/48组，687个负系数逐个不变，465个正样本中463个系数改变；组内P最大误差8.88e-16，N误差0。证据：utp/receipts/a3-4-1-20261027/startup/first-coefficient-verification.json。训练尚处启动阶段，暂无对照结论。
-A3.4.2,待运行,FlowAWR + rarity 只负侧保总量重分配（A3.4 对照组，A1基线）,独立新增文件，随本次提交保存；以 A1 为算法基线。,PickScore（原始分数；评估日志分数×26）,"以 A1 为基线。reward=PickScore/26；adv=(reward−组内均值)/(全局 reward 标准差+1e-4)，裁剪至[-5,5]，temperature=1；b=clip(K×softmax(adv/temperature)−1,-3,3)，先裁剪再重分配。
+scripts/launchers/run_flowawr_sd3_pickscore_rarity_redistribution_8gpu.sh",bash scripts/launchers/run_flowawr_sd3_pickscore_rarity_redistribution_8gpu.sh --config=config/awr_rarity_redistribution.py:sd3_pickscore_positive,flowawr_sd3_pickscore_rarity_redistribution_positive,"按用户要求停止，8×B200资源已释放。最后完整训练step 1744（当前恢复段1680–1744，8rank共65次有效更新）；Eval至1740，175点，最终PickScore 23.76000571，最佳24.00905049（step 1250）。当前段40份raw JSONL共506,709,082字节已归档S3，索引本地保存；当前段TensorBoard 34,032条/94tags及已核验父链已本地保存并校验。唯一结果页：exp_results/results_curves.html。禁止自动恢复。"
+A3.4.2,训练中,FlowAWR + rarity 只负侧保总量重分配（A3.4 对照组，A1基线）,独立新增文件，随本次提交保存；以 A1 为算法基线。,PickScore（原始分数；评估日志分数×26）,"以 A1 为基线。reward=PickScore/26；adv=(reward−组内均值)/(全局 reward 标准差+1e-4)，裁剪至[-5,5]，temperature=1；b=clip(K×softmax(adv/temperature)−1,-3,3)，先裁剪再重分配。
 沿用同一次冻结 PickScore 前向得到的 L2 归一化图像特征，在同 prompt 全部样本上计算 Gaussian leave-one-out KDE，bandwidth=0.14；s=max(1−p_hat/mean(p_hat),0)。跨卡汇总后按解码的 prompt 文本分组，重复 prompt 合并，K取实际组大小。
 仅对 b_i<0：q_i=|b_i|(1−0.5s_i)，b'_i=−min(3,a_minus×q_i)。组内公共正数 a_minus 使负侧绝对值之和保持 N。b_i≥0 保持原值。用于检验将相对更多负侧系数分配给常见低分样本的效果。
 每组、每个训练时间列分别保持正侧总量 P=sum(max(b,0)) 和负侧绝对值总量 N=sum(max(-b,0))，保留符号及零系数；不要求 P=N。触及上限后继续分配剩余份额，同侧无重分配空间时保持原值。守恒对象是系数总量。
 target_x0=pred_x0_old+b'×(x0−pred_x0_old)。原 weight_factor、policy loss、KL、采样、optimizer、梯度裁剪、old 更新及 EMA 沿用 A1。","配置入口：config/awr_rarity_redistribution.py:sd3_pickscore_negative
 redistribution_mode=negative；A3.4.1/A3.4.2/A3.4.3仅模式不同。
-计划单节点8卡，优先B卡；实际型号和集群待提交时确认。
+GPU：实际已分配单节点8×B200，cluster=p-syd-mullet，high-priority=1000；80 CPU / 180 GiB；node=mi-0928d5f1c6618ecf9（A1.4.2释放的同节点）。已确认有效训练更新；实测显存55.04–55.16 GiB/卡，GPU利用率99–100%；核验=2026-10-27T06:53:49.443310+00:00。
 模型 stabilityai/stable-diffusion-3.5-medium；dataset/pickscore；分辨率512×512；LoRA r=32、alpha=64。
 lr=3e-4；seed=42；fp16；KL系数=1e-4；max_grad_norm=1；EMA=True；decay_type=1。
 每卡采样/训练 batch=9；rollout batches=16；梯度累积=16；名义48组×24图=1152图/更新；inner_epochs=1，每epoch 1次optimizer更新。A1原run为16卡、rollout batches=8、梯度累积=8，本组保持相同全局样本量。
@@ -553,14 +196,20 @@ config/awr_rarity_redistribution.py:sd3_pickscore_negative
 flow_grpo/rewards_rarity.py（复用）
 flow_grpo/pickscore_scorer_rarity.py（复用）
 flow_grpo/pickscore_logging.py（复用）
-scripts/launchers/run_flowawr_sd3_pickscore_rarity_redistribution_8gpu.sh",bash scripts/launchers/run_flowawr_sd3_pickscore_rarity_redistribution_8gpu.sh --config=config/awr_rarity_redistribution.py:sd3_pickscore_negative,flowawr_sd3_pickscore_rarity_redistribution_negative,代码已实现，未提交任务，暂无训练或评估结果。
-A3.4.3,待运行,FlowAWR + rarity 正负两侧保总量重分配（A3.4 对照组，A1基线）,独立新增文件，随本次提交保存；以 A1 为算法基线。,PickScore（原始分数；评估日志分数×26）,"以 A1 为基线。reward=PickScore/26；adv=(reward−组内均值)/(全局 reward 标准差+1e-4)，裁剪至[-5,5]，temperature=1；b=clip(K×softmax(adv/temperature)−1,-3,3)，先裁剪再重分配。
+scripts/launchers/run_flowawr_sd3_pickscore_rarity_redistribution_8gpu.sh",bash scripts/launchers/run_flowawr_sd3_pickscore_rarity_redistribution_8gpu.sh --config=config/awr_rarity_redistribution.py:sd3_pickscore_negative,flowawr_sd3_pickscore_rarity_redistribution_negative,"[最新结果同步]北京时间10-29 10:01:46固定快照：Eval step 1640，原始PickScore 24.02564800，共165点；当前UID=cbb4851f-10af-4179-a0a9-90b17530c9bd。本地TensorBoard已完整导出并核验。证据：utp/receipts/all-running-refresh-20261029/inputs.json。逐样本raw/诊断曲线未刷新。[/最新结果同步]
+[运行健康核验]北京时间2026-10-28 21:53:40：Running/Ready，0重启；8个rank有效optimizer更新均前进，step 1106→1142；近期尾部无非有限梯度/AMP跳步/训练致命错误；8×B200功率上限正常；普通live日志S3同步有超时告警，独立raw归档仍推进。仅更新运行健康状态；Eval/逐样本诊断采集时间沿用原记录。证据：utp/receipts/running-health-20261028-evening/health-summary.json。[/运行健康核验]
+最新TensorBoard（2026-10-28T02:11:42.319077+00:00固定快照）：eval_reward_pickscore Eval step 660，原始PickScore=23.762937784194946（日志值×26）；共67个有效Eval点；来源UID=cbb4851f-10af-4179-a0a9-90b17530c9bd。平台只读核验=2026-10-28T02:08:38.254087+00:00，Running/Ready。逐样本raw及D/C/R/gradient/positive_coefficient诊断保留各自原采集范围。标量校验：/Users/yixuan/Desktop/TunnelWorkspace/FlowAWR/utp/receipts/results-refresh-20261028/publication/VALIDATION.json。
+
+原有记录（历史）：
+训练中；核验时间2026-10-27T06:53:49.443310+00:00（北京时间14:53）。8 rank各确认1次有效optimizer更新（日志global_step=0，已完成1次更新，开始epoch 1）；全部optimizer_step_skipped=false，grad_norm_before_clip=0.00814045313745737且有限。8×B200显存56364–56480 MiB（55.04–55.16 GiB/卡），GPU利用率99–100%。实际保存config已核对redistribution_mode=negative、negative_strength=0.5、energy=[−3,3]、lr=3e-4、seed=42、batch=9、梯度累积16、1152图/更新、log_raw_data=True、eval/save_freq=10及num_epochs=100000。job=flowawr-a3-4-2-negative-b200-mullet-20261027；job_uid=8da51cc1-97ee-4ced-b86d-f243eb0ca75f；priority=1000；pod_uid=1ea38c3c-6306-443c-b19a-436bf6ae9f08。独立S3=s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a3-4-2-b200-mullet-20261027。本次核验训练启动与实际配置，未刷新实验曲线或逐样本诊断采集范围。
+旧独立运行 1ea38c3c 已按用户要求删除本地/云端产物及曲线，禁止再次导入；当前运行 cbb4851f 保留。删除记录：utp/receipts/a3-4-2-old-attempt-delete-20261028/。"
+A3.4.3,训练中,FlowAWR + rarity 正负两侧保总量重分配（A3.4 对照组，A1基线）,逐字节复用 A3.4.1/A3.4.2 冻结源码101个成员，SHA256=2be807be7e49365ad04566a4e9721e65baadf0442d8cb283ac562d7a0333c8f5；选择已包含的 sd3_pickscore_both preset；训练源码、原launcher和环境安装逻辑保持不变。,PickScore（原始分数；评估日志分数×26）,"以 A1 为基线。reward=PickScore/26；adv=(reward−组内均值)/(全局 reward 标准差+1e-4)，裁剪至[-5,5]，temperature=1；b=clip(K×softmax(adv/temperature)−1,-3,3)，先裁剪再重分配。
 沿用同一次冻结 PickScore 前向得到的 L2 归一化图像特征，在同 prompt 全部样本上计算 Gaussian leave-one-out KDE，bandwidth=0.14；s=max(1−p_hat/mean(p_hat),0)。跨卡汇总后按解码的 prompt 文本分组，重复 prompt 合并，K取实际组大小。
 正侧：q_i=b_i(1+0.5s_i)，b'_i=min(3,a_plus×q_i)；负侧：q_i=|b_i|(1−0.5s_i)，b'_i=−min(3,a_minus×q_i)。分别求组内公共正数 a_plus、a_minus，使两侧总量各自保持 P、N；b_i=0 保持0。用于检验正、负两侧重分配的组合效果。
 每组、每个训练时间列分别保持正侧总量 P=sum(max(b,0)) 和负侧绝对值总量 N=sum(max(-b,0))，保留符号及零系数；不要求 P=N。触及上限后继续分配剩余份额，同侧无重分配空间时保持原值。守恒对象是系数总量。
 target_x0=pred_x0_old+b'×(x0−pred_x0_old)。原 weight_factor、policy loss、KL、采样、optimizer、梯度裁剪、old 更新及 EMA 沿用 A1。","配置入口：config/awr_rarity_redistribution.py:sd3_pickscore_both
 redistribution_mode=both；A3.4.1/A3.4.2/A3.4.3仅模式不同。
-计划单节点8卡，优先B卡；实际型号和集群待提交时确认。
+实际运行：UTP p-syd-mullet，单节点8×B200；CPU request=80；memory=180Gi；实际优先级=1000。
 模型 stabilityai/stable-diffusion-3.5-medium；dataset/pickscore；分辨率512×512；LoRA r=32、alpha=64。
 lr=3e-4；seed=42；fp16；KL系数=1e-4；max_grad_norm=1；EMA=True；decay_type=1。
 每卡采样/训练 batch=9；rollout batches=16；梯度累积=16；名义48组×24图=1152图/更新；inner_epochs=1，每epoch 1次optimizer更新。A1原run为16卡、rollout batches=8、梯度累积=8，本组保持相同全局样本量。
@@ -569,10 +218,110 @@ global_std=True；adv_clip_max=5；temperature=1；energy_mode=True；hard_gatin
 rarity.enabled=True；feature_type=pickscore_normalized；bandwidth=0.14；epsilon_minus=3；epsilon_plus=3；positive_strength=0.5；negative_strength=0.5，仅所选侧的strength生效。
 resume_from=""""，独立新训练；每10 epoch评估/保存；num_epochs默认100000，实际结束点待定。
 log_raw_data=True；weights.jsonl记录energy_baseline_clipped、energy_used、rarity_score、rarity_energy_before_clip（有界分配的未截断proposal）、两侧重分配前后总量和redistribution_changed。
-保存目录：<logdir>/sd3/pickscore_rarity_redistribution_both","scripts/train_awr_sd3_rarity_redistribution.py
+保存目录：<logdir>/sd3/pickscore_rarity_redistribution_both
+实际任务：flowawr-a3-4-3-both-b200-mullet-20261028
+实际输出：/mnt/shared_storage/jobs/flowawr-a3-4-3-both-b200-mullet-20261028/attempts/27fe3348-c1d5-4e91-b93b-a454f0a8b68d
+S3归档：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a3-4-3-b200-mullet-20261028/attempts/27fe3348-c1d5-4e91-b93b-a454f0a8b68d/
+提交清单：utp/a3-4-3-pickscore-rarity-redistribution-both-b200-mullet-s3.yaml","scripts/train_awr_sd3_rarity_redistribution.py
 flow_grpo/stat_tracking_rarity_redistribution.py
 config/awr_rarity_redistribution.py:sd3_pickscore_both
 flow_grpo/rewards_rarity.py（复用）
 flow_grpo/pickscore_scorer_rarity.py（复用）
 flow_grpo/pickscore_logging.py（复用）
-scripts/launchers/run_flowawr_sd3_pickscore_rarity_redistribution_8gpu.sh",bash scripts/launchers/run_flowawr_sd3_pickscore_rarity_redistribution_8gpu.sh --config=config/awr_rarity_redistribution.py:sd3_pickscore_both,flowawr_sd3_pickscore_rarity_redistribution_both,代码已实现，未提交任务，暂无训练或评估结果。
+scripts/launchers/run_flowawr_sd3_pickscore_rarity_redistribution_8gpu.sh",bash scripts/launchers/run_flowawr_sd3_pickscore_rarity_redistribution_8gpu.sh --config=config/awr_rarity_redistribution.py:sd3_pickscore_both,flowawr_sd3_pickscore_rarity_redistribution_both,"[最新结果同步]北京时间10-29 15:15:24固定快照：Eval step 280，原始PickScore 23.65882134，共29点；当前UID=f2ffae7c-8682-4327-8bb5-5fd8f5600c20。本地TensorBoard已完整导出并核验。重建前旧运行独立保留。证据：utp/receipts/rebuilt-runs-refresh-20261029-latest/capture-other/A3.4.3-publication-input.json。逐样本raw/诊断曲线未刷新。[/最新结果同步]
+[运行健康核验]北京时间2026-10-28 21:53:41：Running/Ready，0重启；8个rank有效optimizer更新均前进，step 79→115；近期尾部无非有限梯度/AMP跳步/训练致命错误；8×B200功率上限正常。仅更新运行健康状态；Eval/逐样本诊断采集时间沿用原记录。证据：utp/receipts/running-health-20261028-evening/health-summary.json。[/运行健康核验]
+[A3.4.3 运行状态]
+训练中；8个rank共同确认至少1次有效optimizer更新（最后step=0）。从头训练，seed=42，resume_from为空；A1基线、both模式，clip=[−3,3]、h=0.14、两侧strength=0.5，P/N分别守恒。
+提交：2026-10-28T10:49:08Z；核验：2026-10-28T11:06:26.340256+00:00。
+job=flowawr-a3-4-3-both-b200-mullet-20261028；Job UID=2eaf58a7-a608-4cef-b63d-b12b45e761de；Pod UID=27fe3348-c1d5-4e91-b93b-a454f0a8b68d。
+证据：utp/receipts/a3-4-3-20261028/first-effective-update-verification.json
+本次只同步运行状态，未新增或刷新评估曲线。
+[/A3.4.3 运行状态]"
+A2.13,训练中,"A2.3 + 全 prompt 共用动态 temperature，energy clipping [-0.5,5]（SD3 + PickScore）",冻结A2.3基线90个文件字节不变，仅新增4个动态温度训练文件；源码SHA256=b3d31dd2fcfab3e30a7cda6becae2ff03855cd2a5847fa34ced70f3715c64424,PickScore（原始分数；eval_reward_pickscore ×26）,"基线 A2.3。reward=PickScore/26；a=(reward−同 prompt 均值)/(本轮全部 reward 标准差+1e-4)。先算全局汇总样本的原始 a，再计算 S_t=sqrt(mean(a²))，不使用已调温后的 a。
+S_ref 为 step 100–300（含端点，共201轮）的 S_t 均值，随后冻结。S_recent 为最近20轮 S_t 均值，包含当前轮。所有 prompt 共用一个 T，每个全局汇总 rollout 只更新一次。
+step<1000 时 T=1。之后 Q=S_recent/(T_old×S_ref)；0.97≤Q≤1.03 时保持 T，否则 T_new=clip(0.95×T_old+0.05×S_recent/S_ref,2/3,1)。新 T 用于本轮 softmax，允许降温和回温。
+p=同 prompt 内 softmax(clip(a,-5,5)/T)；energy=clip(Kp−1,-0.5,5)，K 取实际合组样本数。原 loss、KL、EMA、global std 与 advantage clip 保持。±3% 是对近期平均信号的容忍区间，不保证每轮区分度都在此范围。","实际运行于Mullet p-syd-mullet，单节点8×B200；node=mi-0d13550ac35de66ac。模型 SD3.5-Medium，512×512；seed=42；fp16；lr=3e-4；KL=1e-4；max_grad_norm=1；EMA=True。
+每卡采样/训练 batch=9；sample.num_batches_per_epoch=16；gradient_accumulation_steps=16；1152图/rollout，名义48组×24图；num_inner_epochs=1。训练/评估采样步数10/40；guidance_scale=1；deterministic DPM2；noise_level=0.7；timestep_fraction=0.99。
+脚本默认参数：TEMP_REFERENCE_START=100，TEMP_REFERENCE_END=300，TEMP_ACTIVATION_STEP=1000，TEMP_WINDOW_SIZE=20，TEMP_UPDATE_RATE=0.05，TEMP_TOLERANCE=0.03，TEMP_MIN=0.6666666666666666。
+LEARNING_RATE=0.0003；ENERGY_MIN=-0.5；ENERGY_MAX=5.0。可在启动脚本顶部、环境变量或 --config.train.dynamic_temperature.* 调参；显式命令行覆盖环境变量及脚本默认值，不必改算法 Python。实际生效值以保存 config.json 为准。
+global_std=True；adv_clip_max=5；energy_mode=True；hard_gating=False；gdpo=False；filter_zero_advantage=False。从头训练，resume_from 为空；每10轮评估/保存，num_epochs 默认100000。
+log_raw_data=True，保留逐样本 advantage、softmax_prob、energy_before_clip、energy_used，并记录 T、S_t、S_recent、S_ref 和 Q。checkpoint 另存 dynamic_temperature.json，保存温度与参考/近期统计；续训须带本变体温度状态，不能静默重置参考。step 沿用原 global_step 口径，含 AMP 跳过的 optimizer attempt。
+实际提交：Mullet p-syd-mullet；8×B200/80CPU/180Gi；独立S3=s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a2-13-b200-mullet-20261028；原镜像，torch2.7.1/cu128；排除限功率节点mi-0ec01b135f12af908。","config/awr_dynamic_temperature.py:sd3_pickscore_dynamic_temperature
+flow_grpo/stat_tracking_dynamic_temperature.py
+scripts/train_awr_sd3_dynamic_temperature.py
+scripts/launchers/run_flowawr_sd3_pickscore_dynamic_temperature_8gpu.sh
+tests/test_dynamic_temperature.py
+utp/a2-13-pickscore-dynamic-temperature-b200-mullet-s3.yaml",arnold submit -f utp/a2-13-pickscore-dynamic-temperature-b200-mullet-s3.yaml --application-id core-cn --project-id flowawr --cluster p-syd-mullet --namespace b-core-cn-prod --job-name flowawr-a2-13-dyntemp-b200-20261028 --priority high --no-wait,flowawr_sd3_pickscore_dynamic_temperature_eclip_m0p5_p5,"[最新结果同步]北京时间10-29 15:15:03固定快照：Eval step 340，原始PickScore 23.62381315，共35点；当前UID=eb59ffe5-a382-4f1c-b172-a4b48d626b13。本地TensorBoard已完整导出并核验。重建前旧运行独立保留。证据：utp/receipts/rebuilt-runs-refresh-20261029-latest/capture-a2/A2.13-publication-input.json。逐样本raw/诊断曲线未刷新。[/最新结果同步]
+[运行健康核验]北京时间2026-10-28 21:52:09：Running/Ready，0重启；8个rank有效optimizer更新均前进，step 119→157；近期尾部无非有限梯度/AMP跳步/训练致命错误；8×B200功率上限正常。仅更新运行健康状态；Eval/逐样本诊断采集时间沿用原记录。证据：utp/receipts/running-health-20261028-evening/health-summary.json。[/运行健康核验]
+已开始训练，核验时间=2026-10-28T10:03:47.154562+00:00。8个rank均已确认同一global_step=0的有效、未跳过optimizer更新，梯度记录有限；不能仅以Pod Running或初始Eval判断训练开始。job=flowawr-a2-13-dyntemp-b200-20261028；node=mi-0d13550ac35de66ac；pod_uid=7f03d340-a4a8-4583-af09-8537a7bab8a8。
+实际94个源码文件、配置和GPU preflight已核验；clipping[-0.5,5]、动态温度默认参数、fresh seed42及100000epochs保持。首次更新证据只证明至少一次有效更新，不代表最新累计次数或训练效果。
+证据：utp/receipts/a2-13-20261028/first-training-verification.json。"
+A2.14,训练中,FlowAWR，cosine负侧下界−0.5→−0.7（step1000–1500），正侧+5；A2.3基线，从头独立训练,A2.3基线及现有cosine入口；已冻结源码SHA256=3b705645aa372f0ceed47b3af4d4cfbebc155e578a297f07e153ed2b8f9af3bf；负侧双向插值与CLI覆盖已核验，复用原launcher和已验证B200环境。,PickScore（原始分数；eval_reward_pickscore ×26）,"继承A2.3，保持advantage、softmax、temperature、loss、KL、EMA和学习率不变，仅按global_step调度负侧裁剪下界。
+u=clip((global_step−1000)/500,0,1)；lower=−0.5−0.2×(1−cos(πu))/2；energy_used=clip(K×softmax(clip(advantage,−5,5)/T)−1,lower,5)，K为实际同prompt组大小。
+global_step≤1000保持−0.5；1000–1500以半余弦平滑放宽；step1250下界−0.6；global_step≥1500保持−0.7。正侧上界始终+5，T=1。
+每次rollout计算权重前按当前global_step更新下界，所有rank一致；step沿用原计数口径，含AMP跳过的optimizer attempt。1500仅为调度结束点，不是训练停止条件。
+检验平台前逐步增强低分尾部样本的负向作用能否延续奖励提升；以A2.3/A2.3.1固定[-0.5,5]为历史参照，重点观察1500步后的持续表现，不预设能够突破平台。","实际运行：UTP p-syd-mullet，单节点8×B200；CPU request=80；memory=180Gi；实际优先级=1000。SD3.5-Medium，512×512，fresh seed=42，resume_from为空；fp16；lr=3e-4；KL=1e-4；EMA=True；temperature=1；global_std=True；adv_clip_max=5；energy_mode=True；hard_gating=False；gdpo=False。
+每卡采样/训练batch=9；sample.num_batches_per_epoch=16；train.gradient_accumulation_steps=16；num_inner_epochs=1；1152图/rollout，名义48组×24图。训练/评估采样步数10/40；guidance_scale=1；其余继承A2.3。
+CLI：energy_min=-0.5，energy_min_final=-0.7，energy_max=5.0，energy_min_cosine_start_step=1000，energy_min_cosine_end_step=1500。每10轮评估/保存，num_epochs默认100000。
+log_raw_data=True；保留逐样本advantage、softmax_prob、energy_before_clip、energy_used及training_terms、updates；记录实际lower_bound、upper_bound、正负裁剪比例和mean_shift。独立输出路径及S3归档前缀已确认，见下方。
+实际任务：flowawr-a2-14-cosine-b200-mullet-20261028
+实际输出：/mnt/shared_storage/jobs/flowawr-a2-14-cosine-b200-mullet-20261028/attempts/645333d2-045c-497a-9d95-c888d0717214
+S3归档：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a2-14-b200-mullet-20261028/attempts/645333d2-045c-497a-9d95-c888d0717214/
+提交清单：utp/a2-14-pickscore-cosine-b200-mullet-s3.yaml","config/awr_energy_clip_cosine.py:sd3_pickscore_eclip_cosine
+scripts/train_awr_sd3_energy_clip_cosine.py
+flow_grpo/stat_tracking.py
+flow_grpo/pickscore_logging.py
+scripts/launchers/run_flowawr_sd3_pickscore_eclip_cosine_8gpu.sh",RUN_NAME=flowawr_sd3_pickscore_eclip_cosine_m0p5_m0p7_s1000_e1500_p5_a2_14 bash scripts/launchers/run_flowawr_sd3_pickscore_eclip_cosine_8gpu.sh --config.train.energy_min=-0.5 --config.train.energy_min_final=-0.7 --config.train.energy_max=5.0 --config.train.energy_min_cosine_start_step=1000 --config.train.energy_min_cosine_end_step=1500,flowawr_sd3_pickscore_eclip_cosine_m0p5_m0p7_s1000_e1500_p5_a2_14,"[最新结果同步]北京时间10-29 15:15:03固定快照：Eval step 340，原始PickScore 23.61595142，共35点；当前UID=3505f0d0-8ddb-444f-ae9d-c5effa13b998。本地TensorBoard已完整导出并核验。重建前旧运行独立保留。证据：utp/receipts/rebuilt-runs-refresh-20261029-latest/capture-a2/A2.14-publication-input.json。逐样本raw/诊断曲线未刷新。[/最新结果同步]
+[运行健康核验]北京时间2026-10-28 21:52:09：Running/Ready，0重启；8个rank有效optimizer更新均前进，step 27→64；近期尾部无非有限梯度/AMP跳步/训练致命错误；8×B200功率上限正常。仅更新运行健康状态；Eval/逐样本诊断采集时间沿用原记录。证据：utp/receipts/running-health-20261028-evening/health-summary.json。[/运行健康核验]
+[A2.14 运行状态]
+训练中；8个rank共同确认至少1次有效optimizer更新（最后step=0）。从头训练，seed=42，resume_from为空；A2.3基线，cosine负侧−0.5→−0.7（step1000–1500），正侧+5，T=1、lr=3e-4、1152图/更新。
+提交：2026-10-28T12:01:36.940215+00:00；核验：2026-10-28T12:20:04.237784+00:00。
+job=flowawr-a2-14-cosine-b200-mullet-20261028；Job UID=ad4fe478-97da-44eb-a10e-3387a1f65c3b；Pod UID=645333d2-045c-497a-9d95-c888d0717214。
+证据：utp/receipts/a2-14-20261028/first-effective-update-verification.json
+本次只同步运行状态，未新增或刷新评估曲线。
+[/A2.14 运行状态]"
+A3.5,训练中,"FlowAWR + A3.3 rarity 原 delta 保号 · clip[-0.5,5]（SD3 + PickScore）",保留 A3.3 冻结源码97个成员，仅追加4个独立 sign_preserving 文件；共101成员，source SHA256=ac6a45df533290b8c4979644515897a2956e446928e068268ad39a7ee17de17a。原训练/启动/环境文件不覆盖。,PickScore（原始分数）,"沿用 A3.3：reward=PickScore/26；advantage 为组内中心化后除全局 reward std+1e-4，裁剪[-5,5]，temperature=1；delta=K×softmax(advantage)−1。
+固定归一化 PickScore image embedding、Gaussian leave-one-out KDE，h=0.14；s=max(1−density/组均density,0)；u=s×abs(delta)。
+先计算 b_A3.3=clip(delta+u−组均u,−0.5,5)，再按原 delta 保号：delta>0 取 max(b_A3.3,0)，delta<0 取 min(b_A3.3,0)，delta=0 取0；不再次去均值、不重分配总量。
+target_x0=pred_x0_old+b×(x0−pred_x0_old)；其余 loss、KL、采样、optimizer、梯度裁剪及 EMA 沿用 A3.3。独立 fresh seed42，不续训练。","UTP p-syd-mullet；单节点8×B200；实际优先级=1000。
+配置入口：config/awr_rarity_sign_preserving.py:sd3_pickscore；SD3.5-Medium；512×512；LoRA r=32、alpha=64。
+lr=3e-4；KL=1e-4；max_grad_norm=1；EMA=True；seed=42；resume_from为空。
+每卡batch9；rollout batches16；gradient_accumulation_steps=16；1152图/更新；每图9个训练时间点。
+训练/评估采样步数10/40；guidance_scale=1；DPM2；temperature=1；global_std=True；adv_clip_max=5；hard_gating=False。
+rarity.enabled=True；feature_type=pickscore_normalized；bandwidth=0.14；epsilon_minus=0.5；epsilon_plus=5；原delta保号。
+log_raw_data=True；num_epochs=100000；每10 epoch评估/保存；无自动step停止点。
+实际任务：flowawr-a3-5-sign-b200-mullet-20261029
+实际输出：/mnt/shared_storage/jobs/flowawr-a3-5-sign-b200-mullet-20261029/attempts/29b5ec57-957b-4b74-b51b-68bc05af4e58
+S3归档：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a3-5-b200-mullet-20261029/attempts/29b5ec57-957b-4b74-b51b-68bc05af4e58/
+提交清单：utp/a3-5-pickscore-rarity-sign-preserving-b200-mullet-s3.yaml","config/awr_rarity_sign_preserving.py:sd3_pickscore
+scripts/train_awr_sd3_rarity_sign_preserving.py
+flow_grpo/stat_tracking_rarity_sign_preserving.py",bash scripts/launchers/run_flowawr_sd3_pickscore_rarity_sign_preserving_8gpu.sh,flowawr_sd3_pickscore_rarity_sign_preserving_clip05_5,"[A3.5 运行状态]
+训练中；8个rank共同确认至少2次有效optimizer更新（最后step=1）。从头训练，seed=42，resume_from为空；A3.3 保号变体，clip=[−0.5,5]、h=0.14。
+提交：2026-10-29T04:10:15Z；核验：2026-10-29T05:33:51.877861+00:00。
+job=flowawr-a3-5-sign-b200-mullet-20261029；Job UID=94bfe215-3a51-43e9-97a1-bb5877193a45；Pod UID=29b5ec57-957b-4b74-b51b-68bc05af4e58。
+证据：utp/receipts/a3-5-20261029/followup/attempts/29b5ec57-957b-4b74-b51b-68bc05af4e58/first-training-verification.json
+本次只同步运行状态，未新增或刷新评估曲线。
+[/A3.5 运行状态]"
+A3.4.1.1,训练中,"FlowAWR + rarity 只正侧保总量重分配 · clip[-0.5,5]（A3.4.1对照）",逐字节复用 A3.4.1 冻结源码101个成员，source SHA256=2be807be7e49365ad04566a4e9721e65baadf0442d8cb283ac562d7a0333c8f5。继续使用positive preset，仅以配置覆盖裁剪边界和独立run_name；训练/启动/环境逻辑不变。,PickScore（原始分数）,"以 A3.4.1 为直接对照，唯一算法配置变化是裁剪边界由[-3,3]改为[-0.5,5]。reward=PickScore/26；advantage 为组内中心化后除全局 reward std+1e-4，裁剪[-5,5]，temperature=1；delta=K×softmax(advantage)−1。
+固定归一化 PickScore image embedding、Gaussian leave-one-out KDE，h=0.14；s=max(1−density/组均density,0)。
+先计算 b=clip(delta,−0.5,5)。仅正侧按 q_i=b_i(1+0.5s_i)，b_new_i=min(5,a_plus×q_i) 重分配；组内公共正数 a_plus 使正侧系数总量 P 保持不变；b_i≤0逐个保持原值。
+每个prompt组、每个训练时间列分别保持正侧总量P和负侧绝对值总量N，保留符号与零系数，不要求P=N。负侧strength配置仍为0.5但positive模式不使用它。
+target_x0=pred_x0_old+b_new×(x0−pred_x0_old)；其余 loss、KL、采样、optimizer、梯度裁剪及 EMA 沿用 A3.4.1。独立 fresh seed42，不续训练。","UTP p-syd-mullet；单节点8×B200；实际优先级=1000。
+配置入口：config/awr_rarity_redistribution.py:sd3_pickscore_positive；SD3.5-Medium；512×512；LoRA r=32、alpha=64。
+lr=3e-4；KL=1e-4；max_grad_norm=1；EMA=True；seed=42；resume_from为空。
+每卡batch9；rollout batches16；gradient_accumulation_steps=16；1152图/更新；每图9个训练时间点。
+训练/评估采样步数10/40；guidance_scale=1；DPM2；temperature=1；global_std=True；adv_clip_max=5；hard_gating=False。
+rarity.enabled=True；feature_type=pickscore_normalized；bandwidth=0.14；epsilon_minus=0.5；epsilon_plus=5；redistribution_mode=positive；positive_strength=0.5；negative_strength=0.5（未启用）。
+log_raw_data=True；num_epochs=100000；每10 epoch评估/保存；无自动step停止点。
+实际任务：flowawr-a3-4-1-1-b200-mullet-20261029
+实际输出：/mnt/shared_storage/jobs/flowawr-a3-4-1-1-b200-mullet-20261029/attempts/23008a13-99f9-41f6-989b-f8285dde08d0
+S3归档：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a3-4-1-1-b200-mullet-20261029/attempts/23008a13-99f9-41f6-989b-f8285dde08d0/
+提交清单：utp/a3-4-1-1-pickscore-rarity-redistribution-positive-b200-mullet-s3.yaml","config/awr_rarity_redistribution.py:sd3_pickscore_positive
+scripts/train_awr_sd3_rarity_redistribution.py
+flow_grpo/stat_tracking_rarity_redistribution.py",bash scripts/launchers/run_flowawr_sd3_pickscore_rarity_redistribution_8gpu.sh,flowawr_sd3_pickscore_rarity_redistribution_positive_clip05_5,"[A3.4.1.1 运行状态]
+训练中；8个rank共同确认至少1次有效optimizer更新（最后step=0）。从头训练，seed=42，resume_from为空；A3.4.1 正侧保总量重分配对照，clip=[−0.5,5]、h=0.14、strength=0.5。
+提交：2026-10-29T06:12:55Z；核验：2026-10-29T06:54:02.244109+00:00。
+job=flowawr-a3-4-1-1-b200-mullet-20261029；Job UID=8c9ac84f-417f-4d49-8f5c-0499e504b72c；Pod UID=23008a13-99f9-41f6-989b-f8285dde08d0。
+证据：utp/receipts/a3-4-1-1-20261029/first-effective-update-verification.json
+本次只同步运行状态，未新增或刷新评估曲线。
+[/A3.4.1.1 运行状态]"

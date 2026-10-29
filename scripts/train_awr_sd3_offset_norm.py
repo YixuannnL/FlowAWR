@@ -540,7 +540,8 @@ def main(_):
         config.per_prompt_stat_tracking = False
     if config.per_prompt_stat_tracking:
         # TODO: stat_tracker = PerPromptStatTracker(config.sample.global_std) -> Done
-        stat_tracker = PerPromptStatTracker(config.sample.global_std, adv_clip_max=config.train.adv_clip_max, temperature=config.train.temperature)
+        stat_tracker = PerPromptStatTracker(config.sample.global_std, adv_clip_max=config.train.adv_clip_max, temperature=config.train.temperature,
+                                           energy_min=config.train.energy_min, energy_max=config.train.energy_max)
     else:
         assert False
 
@@ -1179,7 +1180,7 @@ def main(_):
                         loss_terms["energy_max"] = cur_energies.max().detach()
                         loss_terms["energy_min"] = cur_energies.min().detach()
                         loss_terms["energy_pos_rate"] = (cur_energies > 0).float().mean().detach()
-                        loss_terms["energy_clip_rate"] = (torch.abs(cur_energies) >= 2.99).float().mean().detach()
+                        loss_terms["energy_clip_rate"] = ((cur_energies <= config.train.energy_min + 0.01) | (cur_energies >= config.train.energy_max - 0.01)).float().mean().detach()
 
                     loss = policy_loss
                     if raw_logger is not None:
