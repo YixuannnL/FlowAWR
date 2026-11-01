@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+FLOWAWR_DIR="${FLOWAWR_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+WORKSPACE_DIR="$(cd "${FLOWAWR_DIR}/.." && pwd)"
+DIFFUSIONNFT_DIR="${DIFFUSIONNFT_DIR:-${WORKSPACE_DIR}/DiffusionNFT}"
+CONDA_ROOT="${CONDA_ROOT:-${WORKSPACE_DIR}/miniconda3}"
+CONDA_ENV="DiffusionNFT"
+TORCHRUN="${TORCHRUN:-torchrun}"
+
+SD3_MODEL="${SD3_MODEL:-${DIFFUSIONNFT_DIR}/pretrained_models/sd3.5-medium}"
+SWANLAB_RUNTIME="${SWANLAB_RUNTIME:-${FLOWAWR_DIR}/.runtime-deps/swanlab-0.9}"
+# Supported existing presets; no config file is modified.
+REWARD="${REWARD:-pickscore}"
+case "${REWARD}" in
+  pickscore|hpsv2|ocr|geneval) ;;
+  *) echo "REWARD must be pickscore, hpsv2, ocr, or geneval" >&2; exit 2 ;;
+esac
+LOG_ROOT="${LOG_ROOT:-${FLOWAWR_DIR}/logs}"
+SAVE_DIR="${SAVE_DIR:-${LOG_ROOT}/sd3/two_update/${REWARD}}"
+RUN_NAME="${RUN_NAME:-flowawr_sd3_two_update_${REWARD}}"
+
+if [[ ! -f "${CONDA_ROOT}/bin/activate" ]]; then
+  echo "Conda activation script not found: ${CONDA_ROOT}/bin/activate" >&2
+  exit 2
+fi
+if [[ ! -d "${SD3_MODEL}" ]]; then
+  echo "SD3 model directory not found: ${SD3_MODEL}" >&2
+  exit 2
+fi
+if [[ ! -d "${SWANLAB_RUNTIME}/swanlab" ]]; then
+  echo "Isolated SwanLab runtime not found: ${SWANLAB_RUNTIME}" >&2
+  echo "Install it with:" >&2
+  echo "  source ${CONDA_ROOT}/bin/activate ${CONDA_ENV}" >&2
+  echo "  python -m pip install --target ${SWANLAB_RUNTIME} swanlab==0.9.0" >&2
+  exit 2
+fi
+
+mkdir -p "${LOG_ROOT}" "${SAVE_DIR}" "${FLOWAWR_DIR}/.cache"
+
+source "${CONDA_ROOT}/bin/activate" "${CONDA_ENV}"
+cd "${FLOWAWR_DIR}"
+
+# Keep SwanLab's protobuf 6 isolated from DiffusionNFT's protobuf 5. The latter
+# is retained in the environment for its pinned wandb version.
+export PYTHONPATH="${SWANLAB_RUNTIME}:${FLOWAWR_DIR}${PYTHONPATH:+:${PYTHONPATH}}"
+export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0,1,2,3,4,5,6,7}"
+export OMP_NUM_THREADS="${OMP_NUM_THREADS:-1}"
+export NCCL_DEBUG="${NCCL_DEBUG:-WARN}"
+export TORCH_NCCL_ASYNC_ERROR_HANDLING="${TORCH_NCCL_ASYNC_ERROR_HANDLING:-1}"
+export NCCL_NVLS_ENABLE="${NCCL_NVLS_ENABLE:-0}"
+export PYTHONUNBUFFERED=1
+export SWANLAB_MODE="${SWANLAB_MODE:-offline}"
+
+# Reuse the model caches already populated by DiffusionNFT.
+# Share the local reward assets used by DiffusionNFT; compute nodes are offline.
+export REWARD_CKPTS_DIR="${REWARD_CKPTS_DIR:-${DIFFUSIONNFT_DIR}/reward_ckpts}"
+export GENEVAL_OPENCLIP_PATH="${GENEVAL_OPENCLIP_PATH:-${REWARD_CKPTS_DIR}/geneval/openclip/ViT-L-14-state_dict.pt}"
+export HF_HUB_OFFLINE=1
+export TRANSFORMERS_OFFLINE=1
+export HF_HOME="${HF_HOME:-${DIFFUSIONNFT_DIR}/.cache/huggingface}"
+export HUGGINGFACE_HUB_CACHE="${HUGGINGFACE_HUB_CACHE:-${HF_HOME}/hub}"
+export TRANSFORMERS_CACHE="${TRANSFORMERS_CACHE:-${HF_HOME}/transformers}"
+export DIFFUSERS_CACHE="${DIFFUSERS_CACHE:-${HF_HOME}/diffusers}"
+
+echo "FlowAWR frozen-current target: 8 GPUs, SD3.5-Medium + ${REWARD}, two full-batch updates"
+echo "model=${SD3_MODEL}"
+echo "save_dir=${SAVE_DIR}/${RUN_NAME}/<timestamp>"
+
+"${TORCHRUN}" --standalone --nnodes=1 --nproc_per_node=8 \
+  scripts/train_awr_sd3_two_update.py \
+  --config="config/awr.py:sd3_${REWARD}" \
+  --config.pretrained.model="${SD3_MODEL}" \
+  --config.logdir="${LOG_ROOT}" \
+  --config.save_dir="${SAVE_DIR}" \
+  --config.run_name="${RUN_NAME}" \
+  --config.train.ema=False \
+  --config.train.beta=0.0 \
+  --config.train.num_inner_epochs=2 \
+  --config.decay_type=0 \
+  "$@"

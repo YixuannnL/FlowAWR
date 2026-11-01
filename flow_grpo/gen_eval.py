@@ -49,7 +49,18 @@ def load_geneval(DEVICE):
         object_detector = init_detector(CONFIG_PATH, _CKPT_PATH, device=DEVICE)
 
         clip_arch = "ViT-L-14"
-        clip_model, _, transform = open_clip.create_model_and_transforms(clip_arch, pretrained="openai", device=DEVICE)
+        clip_pretrained = os.environ.get(
+            "GENEVAL_OPENCLIP_PATH",
+            os.path.join(CKPT_PATH, "geneval", "openclip", "ViT-L-14-state_dict.pt"),
+        )
+        if not os.path.isfile(clip_pretrained):
+            raise FileNotFoundError(f"Local GenEval OpenCLIP checkpoint not found: {clip_pretrained}")
+        from open_clip.factory import load_checkpoint
+
+        clip_model, _, transform = open_clip.create_model_and_transforms(
+            clip_arch, pretrained=None, load_weights=False, device=DEVICE
+        )
+        load_checkpoint(clip_model, clip_pretrained, strict=False, device=DEVICE)
         tokenizer = open_clip.get_tokenizer(clip_arch)
 
         with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets/object_names.txt")) as cls_file:

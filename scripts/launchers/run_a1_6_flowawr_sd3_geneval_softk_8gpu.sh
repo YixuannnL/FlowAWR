@@ -44,6 +44,11 @@ export NCCL_NVLS_ENABLE="${NCCL_NVLS_ENABLE:-0}"
 export PYTHONUNBUFFERED=1
 export SWANLAB_MODE="${SWANLAB_MODE:-offline}"
 
+# Share the local reward assets used by DiffusionNFT; compute nodes are offline.
+export REWARD_CKPTS_DIR="${REWARD_CKPTS_DIR:-${DIFFUSIONNFT_DIR}/reward_ckpts}"
+export GENEVAL_OPENCLIP_PATH="${GENEVAL_OPENCLIP_PATH:-${REWARD_CKPTS_DIR}/geneval/openclip/ViT-L-14-state_dict.pt}"
+export HF_HUB_OFFLINE=1
+export TRANSFORMERS_OFFLINE=1
 export HF_HOME="${HF_HOME:-${DIFFUSIONNFT_DIR}/.cache/huggingface}"
 export HUGGINGFACE_HUB_CACHE="${HUGGINGFACE_HUB_CACHE:-${HF_HOME}/hub}"
 export TRANSFORMERS_CACHE="${TRANSFORMERS_CACHE:-${HF_HOME}/transformers}"

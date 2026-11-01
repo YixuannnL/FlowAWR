@@ -1,17 +1,19 @@
+import os
 from transformers import AutoProcessor, AutoModel
 from PIL import Image
 import torch
+from flow_grpo.reward_ckpt_path import CKPT_PATH
 
 
 class PickScoreScorer(torch.nn.Module):
     def __init__(self, device="cuda", dtype=torch.float32):
         super().__init__()
-        processor_path = "laion/CLIP-ViT-H-14-laion2B-s32B-b79K"
-        model_path = "yuvalkirstain/PickScore_v1"
+        processor_path = os.path.join(CKPT_PATH, "pickscore", "processor")
+        model_path = os.path.join(CKPT_PATH, "pickscore", "model")
         self.device = device
         self.dtype = dtype
-        self.processor = AutoProcessor.from_pretrained(processor_path)
-        self.model = AutoModel.from_pretrained(model_path).eval().to(device)
+        self.processor = AutoProcessor.from_pretrained(processor_path, local_files_only=True)
+        self.model = AutoModel.from_pretrained(model_path, local_files_only=True).eval().to(device)
         self.model = self.model.to(dtype=dtype)
 
     @torch.no_grad()
