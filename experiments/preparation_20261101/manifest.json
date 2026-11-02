@@ -1,0 +1,41 @@
+{
+  "status": "awaiting_user_confirmation_not_submitted",
+  "code_base": "071895a55ed85a4cd0fab03459873581e9332bdc",
+  "cluster": "h20 / tenc-ali241d2",
+  "gpu_plan": {
+    "nodes": 1,
+    "gpus_per_node": 8
+  },
+  "experiments": {
+    "A5.1": {
+      "launcher": "scripts/launchers/run_a5_1_flowawr_sd3_pickscore_gradclip_0p2_8gpu.sh",
+      "max_grad_norm": 0.2,
+      "baseline": "A1"
+    },
+    "A6.1": {
+      "launcher": "scripts/launchers/run_flowawr_sd3_two_update_8gpu.sh",
+      "max_grad_norm": 1.0,
+      "reward": "pickscore",
+      "num_inner_epochs": 2,
+      "ema": false,
+      "kl_beta": 0,
+      "decay_type": 0
+    }
+  },
+  "reserved_ids": {
+    "A5.2": 0.1,
+    "A5.3": 0.3
+  },
+  "runtime_sha256": "6b46bfe8e0d7a36ecf4faa4888b11e5accb513691e8b587dc7f94d036dfca753",
+  "runtime_path": "/cpfs/yuxuanyao/models/flowawr/runtime_20261101/runtime.tar.gz",
+  "reward_ckpts_dir": "/cpfs/yuxuanyao/models/flowawr/reward_ckpts_20261101",
+  "sd3_revision": "b940f670f0eda2d07fbb75229e779da1ad11eb80",
+  "pickscore_revision": "a4e4367c6dfa7288a00c550414478f865b875800",
+  "processor_revision": "1c2b8495b28150b8a4922ee1c8edee224c284c0c",
+  "cpu_pickscore_raw_approx": 20.7335,
+  "training_started": false,
+  "gpu_checks_performed": false,
+  "preparation_job": "yuxuanyao-flowawr-prep-fffd0e5a7b-debug-20261101-183254",
+  "runtime_restore_cpu_preflight_passed": true,
+  "launcher_arguments_checked_without_torchrun": true
+}

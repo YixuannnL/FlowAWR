@@ -1,0 +1,86 @@
+{
+  "name": "yuxuanyao-flowawr-a5-1-a1a6db8112-normal-20261101-184748",
+  "resourceName": "k1-a176726405bf86e0220224f33c706eb5",
+  "status": "Queuing",
+  "reason": "MPIJob suspended",
+  "uid": "a6bcfc13-f636-4e5b-8588-cc5235bef148",
+  "runId": "45a110b525d041a98354ff3f0e11cd32",
+  "resultPath": "/cpfs/yuxuanyao/runs/45a110b525d041a98354ff3f0e11cd32",
+  "webUrl": "https://k.deltaverse-intl.com/#/tencboard/calc/generaljob/k1-a176726405bf86e0220224f33c706eb5?clusterId=tenc-ali241d2&namespace=arcwm",
+  "image": "600627331169.dkr.ecr.us-west-2.amazonaws.com/arcwm/train-aws@sha256:f8855ec9bf9629d19ac2536d64a351f4bdc9dc58743fc788c6c734a45864169b",
+  "resources": {
+    "gpu": "8",
+    "cpu": "160",
+    "memory": "1760Gi",
+    "efa": null,
+    "rdma": "8"
+  },
+  "submitParams": {
+    "jobNamePrefix": "flowawr-a5-1",
+    "mode": "normal",
+    "nodes": 1,
+    "gpusPerNode": 8,
+    "totalGpus": 8,
+    "cpu": 160,
+    "memory": "1760Gi",
+    "codeMount": "/data/work/run_codes",
+    "ssdGib": 32,
+    "timeLimitHours": 168.0,
+    "image": "600627331169.dkr.ecr.us-west-2.amazonaws.com/arcwm/train-aws@sha256:f8855ec9bf9629d19ac2536d64a351f4bdc9dc58743fc788c6c734a45864169b",
+    "codeBundleUri": "s3://arcwm-code-ap-northeast-1/yuxuanyao/code/flowawr/blobs/a343d37cef4d2510fa1c3ebb4ad90df654f7c45eeca4195d9833bbbed822ed04.tar.gz",
+    "codeBundleSha256": "a343d37cef4d2510fa1c3ebb4ad90df654f7c45eeca4195d9833bbbed822ed04",
+    "largeSsd": false,
+    "mounts": [],
+    "mountRoles": [
+      "shared"
+    ]
+  },
+  "admission": {
+    "phase": "Pending",
+    "platformStatus": "Queuing",
+    "observedAt": "2026-11-01T10:48:05.847192+00:00",
+    "job": {
+      "name": "k1-a176726405bf86e0220224f33c706eb5",
+      "uid": "a6bcfc13-f636-4e5b-8588-cc5235bef148",
+      "kind": "MPIJob",
+      "namespace": "arcwm",
+      "cluster": "tenc-ali241d2",
+      "project": "arcwm"
+    },
+    "queue": "normal",
+    "workloadQuery": {
+      "state": "ok"
+    },
+    "podQuery": {
+      "state": "ok"
+    },
+    "workloads": [
+      {
+        "name": "mpijob-k1-a176726405bf86e0220224f33c706eb5-828ae",
+        "uid": "0884be7d-8d0c-46aa-bba1-8b6799092248",
+        "namespace": "arcwm",
+        "queue": "normal",
+        "conditions": [
+          {
+            "type": "PodsReady",
+            "status": "False",
+            "reason": "WaitForStart",
+            "message": "Not all pods are ready or succeeded",
+            "lastTransitionTime": "2026-11-01T10:47:46Z",
+            "observedGeneration": 1
+          }
+        ],
+        "generation": 1,
+        "admissionChecks": [],
+        "clusterQueue": null
+      }
+    ],
+    "podCount": 0,
+    "runningPodCount": 0,
+    "pods": [],
+    "resourceErrors": []
+  },
+  "code_bundle_uri": "s3://arcwm-code-ap-northeast-1/yuxuanyao/code/flowawr/blobs/a343d37cef4d2510fa1c3ebb4ad90df654f7c45eeca4195d9833bbbed822ed04.tar.gz",
+  "experiment_id": "A5.1",
+  "max_grad_norm": 0.2
+}
