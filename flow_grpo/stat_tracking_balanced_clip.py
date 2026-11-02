@@ -77,10 +77,10 @@ class PerPromptStatTracker:
                 if diagnostics is not None:
                     diagnostics["softmax_prob"][prompts == prompt] = probs
                     diagnostics["energy_before_clip"][prompts == prompt] = energies_reranged
-                energies_clipped = np.clip(energies_reranged, self.energy_min, self.energy_max)
+                energies_clipped = np.clip(energies_reranged, self.energy_min, self.energy_max) #[3,1,-1,-1]
                 # Balance this actual prompt group by shrinking the larger sign mass.
-                positive = np.maximum(energies_clipped, 0.0)
-                negative = np.minimum(energies_clipped, 0.0)
+                positive = np.maximum(energies_clipped, 0.0) # [x,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+                negative = np.minimum(energies_clipped, 0.0) #
                 positive_mass = positive.sum(axis=0, keepdims=True)
                 negative_mass = -negative.sum(axis=0, keepdims=True)
                 target_mass = np.minimum(positive_mass, negative_mass)
@@ -94,7 +94,7 @@ class PerPromptStatTracker:
                     diagnostics["group_energy_sum_after_clip"][prompts == prompt] = energies_clipped.sum(axis=0, keepdims=True)
                     diagnostics["group_energy_sum_used"][prompts == prompt] = energies_balanced.sum(axis=0, keepdims=True)
                     diagnostics["group_size"][prompts == prompt] = k
-                energies[prompts == prompt] = energies_balanced
+                energies[prompts == prompt] = energies_balanced 
                 energies_stds[prompts == prompt] = energy_stds
             elif diagnostics is not None:
                 # This tracker does not clip advantages outside energy mode.
