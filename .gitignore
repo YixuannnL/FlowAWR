@@ -67,3 +67,4 @@ docs/
 analyse_code/
 arnold.yml
 experiments_past.csv
+*.tex

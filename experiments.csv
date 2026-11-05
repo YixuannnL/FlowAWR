@@ -1,6 +1,5 @@
-标识号码,状态,想得到的结论,说明,代码版本,评估指标,方法说明,配置（按实际条件修改）,对应核心代码,启动脚本,保存名称,结果说明
-标识号码,状态,想得到的结论,说明,代码版本,评估指标,方法说明,配置（按实际条件修改）,对应核心代码,启动脚本,保存名称,结果说明
-A2.1,已停止,,"FlowAWR，energy 裁剪区间 [−0.7, 5]（SD3 + PickScore，新独立实验）",main,PickScore（原始分数）,"纯 clipping：energy = clip(Kp − 1, −0.7, 5)，K 为实际同 prompt 组大小，p 为原组内 softmax 概率。保留 advantage、temperature=1、softmax、loss、KL、EMA 及学习率，不增加去均值或重归一化；其余沿用 A2.9 已验证的 runtime config。
+标识号码,状态,想得到的结论,能得到的结论,说明,代码版本,评估指标,方法说明,配置（按实际条件修改）,对应核心代码,启动脚本,保存名称,结果说明
+A2.1,已停止,对照-0.5和-0.6下界，将负侧放宽至-0.7，检验奖励提升与训练稳定性的变化。,放宽至-0.7后仍有约0.30分回撤，未显示消除后期波动的效果。,"FlowAWR，energy 裁剪区间 [−0.7, 5]（SD3 + PickScore，新独立实验）",main,PickScore（原始分数）,"纯 clipping：energy = clip(Kp − 1, −0.7, 5)，K 为实际同 prompt 组大小，p 为原组内 softmax 概率。保留 advantage、temperature=1、softmax、loss、KL、EMA 及学习率，不增加去均值或重归一化；其余沿用 A2.9 已验证的 runtime config。
 这是新的裁剪实验；A0.1 temperature=0.3 实验留在 experiments_past.csv，属于 A0 系列。使用独立 run_name 和输出来源，不混用不同实验的数据。","GPU：已分配单节点 8×B200；cluster=p-syd-mullet；node=mi-07efa5ae02eba28da；Kueue high-priority=1000。Workload admitted / PodsReady：2026-10-27T04:32:32Z。
 配置入口：config/awr_energy_clip.py:sd3_pickscore_eclip_m0p5_p5；CLI 覆盖 train.energy_min=-0.7、train.energy_max=5.0，实际生效值以保存 config.json 为准。
 SD3.5-Medium；512×512；LoRA r=32、alpha=64；seed=42；fp16；lr=3e-4；temperature=1；KL=1e-4；max_grad_norm=1；EMA=True；global_std=True；adv_clip_max=5；hard_gating=False；filter_zero_advantage=False。
@@ -10,7 +9,7 @@ log_raw_data=True；实际裁剪按 energy_before_clip 与 energy_used 判断；
 scripts/train_awr_sd3_energy_clip.py
 scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh
 flow_grpo/stat_tracking.py（np.clip）",bash scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh --config.train.energy_min=-0.7 --config.train.energy_max=5.0 --config.run_name=flowawr_sd3_pickscore_eclip_m0.7_p5,flowawr_sd3_pickscore_eclip_m0.7_p5,"按用户要求停止，8×B200资源已释放。最后完整训练step 2259（当前恢复段2090–2259，8rank共170次有效更新）；Eval至2250，226点，最终PickScore 23.91477787，最佳24.19611263（step 2120）。当前段40份raw JSONL共1,179,503,824字节已归档S3，索引本地保存；当前段TensorBoard 86,361条/94tags及已核验父链已本地保存并校验。唯一结果页：exp_results/results_curves.html。禁止自动恢复。"
-A2.3.1,已停止,,"A2.3 从0独立重跑；energy [−0.5, 5]；UTP 8×B200",A2.3 冻结源码 SHA256=1834b1af0a4b3c3e0ac44874a79c6451d43862b5515fd6647139e00f3c13cf54,PickScore（原始分数）,"与 A1 完全相同的训练，唯一改动：energy 的裁剪区间从 [−3, 3] 改为 [−0.5, 5]。temperature 仍为 1，不动任何其他参数。
+A2.3.1,已停止,"在B200上独立重跑A2.3，检验[-0.5,5]裁剪的学习轨迹与稳定性是否可复现。",独立重跑后期出现非有限更新，正常轮上界5未触发，系数限幅未保证长期稳定。,"A2.3 从0独立重跑；energy [−0.5, 5]；UTP 8×B200",A2.3 冻结源码 SHA256=1834b1af0a4b3c3e0ac44874a79c6451d43862b5515fd6647139e00f3c13cf54,PickScore（原始分数）,"与 A1 完全相同的训练，唯一改动：energy 的裁剪区间从 [−3, 3] 改为 [−0.5, 5]。temperature 仍为 1，不动任何其他参数。
 原公式 energy = clip(24p − 1, −3, 3)，24p − 1 的最小值是 −1，所以 −3 下界从未生效；+3 上界在 τ=1 下也几乎不生效（step 0 每组裁 0.09 个样本，ckpt-900 为 0）。改成 [−0.5, 5] 后：上界 5 仍然碰不到；下界 −0.5 会把低于 −0.5 的负能量抬到 −0.5，被抬起的样本占比随训练阶段变化，step 0 约 14%，ckpt-900 约 0.2%（能量尺度随训练缩小 3 倍）。
 效果方向：裁负侧使组内能量和由 0 变正（step 0 约 +0.46/组，后期趋近 0），正组和等于把预测向自己的样本拉近，是与 A2.1（负组和、推离自身样本）相反的偏置。探针估计这部分漂移在 step 0 占梯度范数 7%，后期约 1%；去均值后的梯度信噪比与 A1 相同（split-half 余弦 0.055 对 0.055），与 A1 梯度方向余弦 step 0 为 0.99、ckpt-900 为 1.00。
 因此预期差别集中在前约 100 步：Eval 可能略高于 A1、组内奖励 std 下降更快、KL 略高；之后下界基本不再命中，曲线应与 A1 趋同。如果想让负侧裁剪在整个训练中持续生效，需要把下界收紧到 −0.3（step 0 命中 32%、ckpt-900 命中 3.8%），那是另一组实验。
@@ -25,7 +24,7 @@ log_raw_data=True（raw_data 里的 energy_before_clip 与 energy_used 可离线
 scripts/train_awr_sd3_energy_clip.py（新建：train_awr_sd3.py 副本，仅 tracker 构造处传入 energy_min/energy_max）
 scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh（新建：A1 启动器副本，换用上述脚本与配置）
 flow_grpo/stat_tracking.py 第 75 行（np.clip(energies_reranged, energy_min, energy_max)，与官方一致，未改）",bash staging/runtime/run_training_a231_blackwell.sh（原A2.3 launcher）,flowawr_sd3_pickscore_eclip_m0p5_p5_a2_3_1,"按用户要求停止，8×B200资源已释放。最后完整训练step 2676（当前恢复段2600–2663及2676，8rank共65次有效更新；日志尝试到2923，含非有限记录）；Eval至2920，293点，最终PickScore 24.05716002，最佳24.07549787（step 1360）。当前段40份raw JSONL共2,285,484,296字节已归档S3，索引本地保存；当前段TensorBoard 166,981条/94tags及已核验父链已本地保存并校验。唯一结果页：exp_results/results_curves.html。禁止自动恢复。"
-A2.9,已停止,,"FlowAWR，energy 裁剪区间 [−0.5, 4]，与 A2.3 / A2.5 对照（SD3 + PickScore）",main,PickScore（原始分数）,"沿用 A2.5 的纯 clipping 方法，energy = clip(Kp − 1, −0.5, 4)，K 为当前实际同 prompt 组大小，p 为原组内 softmax 概率。负侧下界固定为 −0.5，比较 A2.5 / A2.9 / A2.3 的正侧上界 3 / 4 / 5，观察早期学习轨迹、后期平台和指标回撤。
+A2.9,已停止,固定负侧下界-0.5，对照上界3和5，检验正侧上界4对奖励与回撤的影响。,上界4下后期奖励回落逾1分并出现非有限梯度，未消除长期失稳。,"FlowAWR，energy 裁剪区间 [−0.5, 4]，与 A2.3 / A2.5 对照（SD3 + PickScore）",main,PickScore（原始分数）,"沿用 A2.5 的纯 clipping 方法，energy = clip(Kp − 1, −0.5, 4)，K 为当前实际同 prompt 组大小，p 为原组内 softmax 概率。负侧下界固定为 −0.5，比较 A2.5 / A2.9 / A2.3 的正侧上界 3 / 4 / 5，观察早期学习轨迹、后期平台和指标回撤。
 保留原 advantage、temperature=1、softmax、loss、KL、EMA 及学习率，不增加去均值或重归一化。裁剪触发稀疏不预设其影响小。比较 Eval、KL、逐样本 reward、正负侧裁剪事件及组内 energy 分布，效果待实测。
 复用已有配置、训练脚本和启动器，以 CLI 覆盖 energy_max=4.0。","GPU：已分配单节点 8 张 B200（p-syd-mullet；Kueue 优先级 1000）。实际运行环境已核验：PyTorch 2.7.1+cu128 / CUDA 12.8、Transformers 4.40.0，ftfy 未安装；与 A2.5 的实际版本、抽检 token IDs 及 tokenizer 资产哈希一致。历史 A2.3 与 A2.5 的硬件及文本预处理环境不同，跨 run 比较保留这一限制。
 默认模型：stabilityai/stable-diffusion-3.5-medium；512×512；LoRA r=32、alpha=64。
@@ -38,7 +37,7 @@ log_raw_data=True；通过 energy_before_clip 与 energy_used 核对裁剪，分
 scripts/train_awr_sd3_energy_clip.py
 scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh
 flow_grpo/stat_tracking.py（np.clip）",bash scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh --config.train.energy_min=-0.5 --config.train.energy_max=4.0 --config.run_name=flowawr_sd3_pickscore_eclip_m0.5_p4,flowawr_sd3_pickscore_eclip_m0.5_p4,"按用户要求停止，8×B200资源已释放。最后日志step 3209；最后有效optimizer更新step 2963（末段记录500轮，含AMP跳步/非有限梯度；8rank共206次有效更新，不作为跨续训历史总次数）；Eval至3210，322点，最终PickScore 23.17991424，最佳24.18508792（step 2720）。当前attempt的40份raw JSONL共3,465,249,061字节已归档S3，索引本地保存；全量TensorBoard 255,515条/94tags已本地保存并校验。唯一结果页：exp_results/results_curves.html。禁止自动恢复。"
-A2.10,已停止,,"FlowAWR，energy 裁剪 [−0.5, 3] 后按组平衡正负总量（SD3 + PickScore）",A2.3冻结90文件 + 4个独立文件；source SHA256 2dc3f95c44b4def51b23135e7e41097b6ee00c51809e9ca2c6861f18dbaec9f7,PickScore（原始分数）,"以 A2.5 的纯 clipping 为对照，沿用 reward=PickScore/26、组内 reward 中心化、全局 reward 标准差+1e-4、advantage 裁剪[-5,5]和温度1；p 为原组内 softmax 概率。
+A2.10,已停止,对照A2.5在裁剪后恢复组内正负系数总量平衡，检验零和能否减少回撤。,组内正负系数总量已平衡仍发生三次回撤，系数零和不足以控制异常残差。,"FlowAWR，energy 裁剪 [−0.5, 3] 后按组平衡正负总量（SD3 + PickScore）",A2.3冻结90文件 + 4个独立文件；source SHA256 2dc3f95c44b4def51b23135e7e41097b6ee00c51809e9ca2c6861f18dbaec9f7,PickScore（原始分数）,"以 A2.5 的纯 clipping 为对照，沿用 reward=PickScore/26、组内 reward 中心化、全局 reward 标准差+1e-4、advantage 裁剪[-5,5]和温度1；p 为原组内 softmax 概率。
 x_i=K_g*p_i−1；b_i=clip(x_i,−0.5,3)。先跨全部 rank gather，再按 tokenizer 解码后的真实 prompt 字符串分组；K_g 为实际组大小，重复 prompt 可合并为48图等，不按固定24图分块。
 每个实际组、每个时间列独立沿样本轴计算 P_g=sum(max(b_i,0))、N_g=sum(max(−b_i,0))、T_g=min(P_g,N_g)。正侧 scale=T_g/P_g，负侧 scale=T_g/N_g；分母为0时对应scale设0，不加epsilon。
 e_i=max(b_i,0)*positive_scale+min(b_i,0)*negative_scale。只缩小裁剪后绝对总量较大的一侧，零和在浮点误差范围内成立；保持符号和[−0.5,3]边界，各系数幅值只减不增。若一侧总量为0，整组最终系数为0。
@@ -62,7 +61,7 @@ flow_grpo/rewards.py（复用原奖励）
 scripts/launchers/run_flowawr_sd3_pickscore_balanced_clip_8gpu.sh
 utp/a2-10-pickscore-balanced-clip-b200-mullet-s3.yaml
 utp/runtime/run_training_a210_blackwell.sh（独立B200启动包装）",bash scripts/launchers/run_flowawr_sd3_pickscore_balanced_clip_8gpu.sh,flowawr_sd3_pickscore_balanced_clip_m0p5_p3,"按用户要求停止，8×B200资源已释放。最后完整训练step 2704（当前恢复段2660–2704，8rank共45次有效更新）；Eval至2700，271点，最终PickScore 24.18172193，最佳24.19829154（step 2360）。当前段40份raw JSONL共332,315,919字节已归档S3，索引本地保存；当前段TensorBoard 206,977条/95tags及已核验父链已本地保存并校验。唯一结果页：exp_results/results_curves.html。禁止自动恢复。"
-A2.12,已停止,,FlowAWR，cosine下界−0.5→−0.4（step800–1200），上界+5；8×H100，从头训练,逐字节复用原cosine实验冻结源码 SHA256=0376ae032a36ec42cae01a3e7b288c09e13bee0a2c88bc251ac81ca228a15ecb,PickScore（原始分数；评估日志分数 ×26）,"继承 A2.3 的纯 energy clipping 配置，仅增加与数据无关的负侧下界调度。K 为实际同 prompt 组大小，p=softmax(advantage/temperature)，raw_energy=Kp−1。
+A2.12,已停止,对照固定-0.5下界，在800至1200步收紧至-0.4，检验后期负尾保护是否有益。,800至1290步奖励先升后降，未显示收紧下界的持续收益，随后按用户要求停止。,FlowAWR，cosine下界−0.5→−0.4（step800–1200），上界+5；8×H100，从头训练,逐字节复用原cosine实验冻结源码 SHA256=0376ae032a36ec42cae01a3e7b288c09e13bee0a2c88bc251ac81ca228a15ecb,PickScore（原始分数；评估日志分数 ×26）,"继承 A2.3 的纯 energy clipping 配置，仅增加与数据无关的负侧下界调度。K 为实际同 prompt 组大小，p=softmax(advantage/temperature)，raw_energy=Kp−1。
 u=clip((global_step−800)/400,0,1)；lower=−0.5+0.1×(1−cos(πu))/2；energy_used=clip(raw_energy,lower,5)。global_step≤800 保持 −0.5，800–1200 以半余弦过渡，global_step≥1200 保持 −0.4；正侧上界始终为 +5。
 每次 rollout 在 stat_tracker.update 前按当前 global_step 更新实际下界；续训时沿用恢复的 global_step。global_step 沿用原训练计数逻辑，AMP 跳过更新时也可能递增。
 保留原 advantage、softmax、loss、KL、EMA 和学习率；不减均值、不平衡正负总量、不重新分配被裁剪部分。目标是后期适度处理异常负尾，实际裁剪比例和效果待训练验证。",UTP general-aws-usw2-prod-0；单节点8×H100；80CPU/180Gi；priority1000。复用已验证Hopper torch2.6.0/cu124环境。fresh seed42，resume_from为空；1152图/更新，原cosine及其余训练参数不变。独立S3=s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a2-12-1-h100-usw2-20261028,"config/awr_energy_clip_cosine.py
@@ -77,7 +76,7 @@ scripts/launchers/run_flowawr_sd3_pickscore_eclip_cosine_8gpu.sh",arnold submit 
 A2.12：8×H100，训练中，从头训练，cosine参数不变。
 核验时间：2026-10-28T03:26:10.279741+00:00；job=flowawr-a2-12-1-cosine-h100-20261028；node=i-04fbe7eb2509fd078.us-west-2.compute.internal。8个rank均确认有效optimizer更新；最少1次，未跳步。
 无可调度的其他B200节点，80/48CPU两次排队均已撤回且未训练。证据：utp/receipts/a2-12-1-20261028/。"
-A4.2,已停止,,"A4.1 对照：current–old 偏移归一化，energy clipping 改为 [−0.5, 5]（SD3 + PickScore）","以 A4.1 冻结源码122个成员为基线；A4.2 源码 SHA256=49f00d3e59d2d90c1eeedb29bef1e7cfc1ecaf9a2c8a5fa93d0143f1f6db3718。仅在原路径覆盖 config/awr_offset_norm.py 和 scripts/train_awr_sd3_offset_norm.py 两个文件，接入裁剪参数及对应日志阈值；其余120个成员及原launcher逐字节不变。原launcher通过CLI传入 energy=[−0.5,5]，不新增训练入口。",PickScore（原始分数；评估日志分数 ×26）,"以 A4.1 为直接对照，唯一算法变化为 energy clipping 从 [−3, 3] 改为 [−0.5, 5]；保留 A4.1 的 current–old 偏移归一化分母。
+A4.2,已停止,"检验偏移分母不变时，将energy裁剪改为[-0.5,5]对奖励与稳定性的影响。",后期出现非有限梯度与持续奖励下降，偏移分母配合该裁剪仍未避免本次失稳。,"A4.1 对照：current–old 偏移归一化，energy clipping 改为 [−0.5, 5]（SD3 + PickScore）","以 A4.1 冻结源码122个成员为基线；A4.2 源码 SHA256=49f00d3e59d2d90c1eeedb29bef1e7cfc1ecaf9a2c8a5fa93d0143f1f6db3718。仅在原路径覆盖 config/awr_offset_norm.py 和 scripts/train_awr_sd3_offset_norm.py 两个文件，接入裁剪参数及对应日志阈值；其余120个成员及原launcher逐字节不变。原launcher通过CLI传入 energy=[−0.5,5]，不新增训练入口。",PickScore（原始分数；评估日志分数 ×26）,"以 A4.1 为直接对照，唯一算法变化为 energy clipping 从 [−3, 3] 改为 [−0.5, 5]；保留 A4.1 的 current–old 偏移归一化分母。
 x0 为 old 多步生成的固定样本 latent；x_current 与 x_old 为两模型对同一加噪输入的干净 latent 预测。
 target=x_old+energy*(x0−x_old)；w=stopgrad(max(mean(abs(x_current−x0))+abs(1−energy)*mean(abs(x_current−x_old)),1e-5))；policy_loss=mean((x_current−target)^2)/w。内部 mean 对单张图的 latent 元素取平均，再对样本及训练时间点平均。
 保留 MAE，不换 RMS；下限作用于两项之和，整个分母不参与求导。current=old 或 energy=1 时恢复原分母。
@@ -107,7 +106,7 @@ job=flowawr-a4-2-offset-norm-b200-20261028；Job UID=fbb933ee-b822-4b12-9350-fd9
 证据：utp/receipts/a4-2-20261028/startup/20261028T093841-training-probe.json
 本次只同步运行状态，未新增或刷新评估曲线。
 [/A4.2 运行状态]"
-A3.4.1,已停止,,FlowAWR + rarity 只正侧保总量重分配（A3.4 对照组，A1基线）,独立新增文件，随本次提交保存；A1 算法基线。不可变源码包 source SHA256=2be807be7e49365ad04566a4e9721e65baadf0442d8cb283ac562d7a0333c8f5；原 97 个文件保持不变，仅追加 4 个 redistribution 文件。,PickScore（原始分数；评估日志分数×26）,"以 A1 为基线。reward=PickScore/26；adv=(reward−组内均值)/(全局 reward 标准差+1e-4)，裁剪至[-5,5]，temperature=1；b=clip(K×softmax(adv/temperature)−1,-3,3)，先裁剪再重分配。
+A3.4.1,已停止,检验正侧系数保总量时，向稀有样本重分配系数能否改善奖励与稳定性。,本次正侧保总量重分配仍出现约0.94分回撤，尚不能确认稳定性收益。,FlowAWR + rarity 只正侧保总量重分配（A3.4 对照组，A1基线）,独立新增文件，随本次提交保存；A1 算法基线。不可变源码包 source SHA256=2be807be7e49365ad04566a4e9721e65baadf0442d8cb283ac562d7a0333c8f5；原 97 个文件保持不变，仅追加 4 个 redistribution 文件。,PickScore（原始分数；评估日志分数×26）,"以 A1 为基线。reward=PickScore/26；adv=(reward−组内均值)/(全局 reward 标准差+1e-4)，裁剪至[-5,5]，temperature=1；b=clip(K×softmax(adv/temperature)−1,-3,3)，先裁剪再重分配。
 沿用同一次冻结 PickScore 前向得到的 L2 归一化图像特征，在同 prompt 全部样本上计算 Gaussian leave-one-out KDE，bandwidth=0.14；s=max(1−p_hat/mean(p_hat),0)。跨卡汇总后按解码的 prompt 文本分组，重复 prompt 合并，K取实际组大小。
 仅对 b_i>0：q_i=b_i(1+0.5s_i)，b'_i=min(3,a_plus×q_i)。组内公共正数 a_plus 使正侧系数之和保持 P。b_i≤0 保持原值。用于检验把正侧系数更多分配给稀有好样本的效果。
 每组、每个训练时间列分别保持正侧总量 P=sum(max(b,0)) 和负侧绝对值总量 N=sum(max(-b,0))，保留符号及零系数；不要求 P=N。触及上限后继续分配剩余份额，同侧无重分配空间时保持原值。守恒对象是系数总量。
@@ -129,7 +128,7 @@ flow_grpo/rewards_rarity.py（复用）
 flow_grpo/pickscore_scorer_rarity.py（复用）
 flow_grpo/pickscore_logging.py（复用）
 scripts/launchers/run_flowawr_sd3_pickscore_rarity_redistribution_8gpu.sh",bash scripts/launchers/run_flowawr_sd3_pickscore_rarity_redistribution_8gpu.sh --config=config/awr_rarity_redistribution.py:sd3_pickscore_positive,flowawr_sd3_pickscore_rarity_redistribution_positive,"按用户要求停止，8×B200资源已释放。最后完整训练step 1744（当前恢复段1680–1744，8rank共65次有效更新）；Eval至1740，175点，最终PickScore 23.76000571，最佳24.00905049（step 1250）。当前段40份raw JSONL共506,709,082字节已归档S3，索引本地保存；当前段TensorBoard 34,032条/94tags及已核验父链已本地保存并校验。唯一结果页：exp_results/results_curves.html。禁止自动恢复。"
-A3.4.2,已停止,,FlowAWR + rarity 只负侧保总量重分配（A3.4 对照组，A1基线）,独立新增文件，随本次提交保存；以 A1 为算法基线。,PickScore（原始分数；评估日志分数×26）,"以 A1 为基线。reward=PickScore/26；adv=(reward−组内均值)/(全局 reward 标准差+1e-4)，裁剪至[-5,5]，temperature=1；b=clip(K×softmax(adv/temperature)−1,-3,3)，先裁剪再重分配。
+A3.4.2,已停止,检验负侧系数保总量时，减少对稀有样本的抑制能否改善奖励与稳定性。,本次最高24.27分、最大回撤约0.23分，较平稳的表现仍需独立复验。,FlowAWR + rarity 只负侧保总量重分配（A3.4 对照组，A1基线）,独立新增文件，随本次提交保存；以 A1 为算法基线。,PickScore（原始分数；评估日志分数×26）,"以 A1 为基线。reward=PickScore/26；adv=(reward−组内均值)/(全局 reward 标准差+1e-4)，裁剪至[-5,5]，temperature=1；b=clip(K×softmax(adv/temperature)−1,-3,3)，先裁剪再重分配。
 沿用同一次冻结 PickScore 前向得到的 L2 归一化图像特征，在同 prompt 全部样本上计算 Gaussian leave-one-out KDE，bandwidth=0.14；s=max(1−p_hat/mean(p_hat),0)。跨卡汇总后按解码的 prompt 文本分组，重复 prompt 合并，K取实际组大小。
 仅对 b_i<0：q_i=|b_i|(1−0.5s_i)，b'_i=−min(3,a_minus×q_i)。组内公共正数 a_minus 使负侧绝对值之和保持 N。b_i≥0 保持原值。用于检验将相对更多负侧系数分配给常见低分样本的效果。
 每组、每个训练时间列分别保持正侧总量 P=sum(max(b,0)) 和负侧绝对值总量 N=sum(max(-b,0))，保留符号及零系数；不要求 P=N。触及上限后继续分配剩余份额，同侧无重分配空间时保持原值。守恒对象是系数总量。
@@ -157,7 +156,7 @@ scripts/launchers/run_flowawr_sd3_pickscore_rarity_redistribution_8gpu.sh",bash 
 原有记录（历史）：
 训练中；核验时间2026-10-27T06:53:49.443310+00:00（北京时间14:53）。8 rank各确认1次有效optimizer更新（日志global_step=0，已完成1次更新，开始epoch 1）；全部optimizer_step_skipped=false，grad_norm_before_clip=0.00814045313745737且有限。8×B200显存56364–56480 MiB（55.04–55.16 GiB/卡），GPU利用率99–100%。实际保存config已核对redistribution_mode=negative、negative_strength=0.5、energy=[−3,3]、lr=3e-4、seed=42、batch=9、梯度累积16、1152图/更新、log_raw_data=True、eval/save_freq=10及num_epochs=100000。job=flowawr-a3-4-2-negative-b200-mullet-20261027；job_uid=8da51cc1-97ee-4ced-b86d-f243eb0ca75f；priority=1000；pod_uid=1ea38c3c-6306-443c-b19a-436bf6ae9f08。独立S3=s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a3-4-2-b200-mullet-20261027。本次核验训练启动与实际配置，未刷新实验曲线或逐样本诊断采集范围。
 旧独立运行 1ea38c3c 已按用户要求删除本地/云端产物及曲线，禁止再次导入；当前运行 cbb4851f 保留。删除记录：utp/receipts/a3-4-2-old-attempt-delete-20261028/。"
-A3.4.3,已停止,,FlowAWR + rarity 正负两侧保总量重分配（A3.4 对照组，A1基线）,逐字节复用 A3.4.1/A3.4.2 冻结源码101个成员，SHA256=2be807be7e49365ad04566a4e9721e65baadf0442d8cb283ac562d7a0333c8f5；选择已包含的 sd3_pickscore_both preset；训练源码、原launcher和环境安装逻辑保持不变。,PickScore（原始分数；评估日志分数×26）,"以 A1 为基线。reward=PickScore/26；adv=(reward−组内均值)/(全局 reward 标准差+1e-4)，裁剪至[-5,5]，temperature=1；b=clip(K×softmax(adv/temperature)−1,-3,3)，先裁剪再重分配。
+A3.4.3,已停止,检验同时重分配正负两侧且各自保总量，能否获得优于单侧调整的表现。,本次双侧保总量仍出现约1.55分回撤，且未记录非有限梯度。,FlowAWR + rarity 正负两侧保总量重分配（A3.4 对照组，A1基线）,逐字节复用 A3.4.1/A3.4.2 冻结源码101个成员，SHA256=2be807be7e49365ad04566a4e9721e65baadf0442d8cb283ac562d7a0333c8f5；选择已包含的 sd3_pickscore_both preset；训练源码、原launcher和环境安装逻辑保持不变。,PickScore（原始分数；评估日志分数×26）,"以 A1 为基线。reward=PickScore/26；adv=(reward−组内均值)/(全局 reward 标准差+1e-4)，裁剪至[-5,5]，temperature=1；b=clip(K×softmax(adv/temperature)−1,-3,3)，先裁剪再重分配。
 沿用同一次冻结 PickScore 前向得到的 L2 归一化图像特征，在同 prompt 全部样本上计算 Gaussian leave-one-out KDE，bandwidth=0.14；s=max(1−p_hat/mean(p_hat),0)。跨卡汇总后按解码的 prompt 文本分组，重复 prompt 合并，K取实际组大小。
 正侧：q_i=b_i(1+0.5s_i)，b'_i=min(3,a_plus×q_i)；负侧：q_i=|b_i|(1−0.5s_i)，b'_i=−min(3,a_minus×q_i)。分别求组内公共正数 a_plus、a_minus，使两侧总量各自保持 P、N；b_i=0 保持0。用于检验正、负两侧重分配的组合效果。
 每组、每个训练时间列分别保持正侧总量 P=sum(max(b,0)) 和负侧绝对值总量 N=sum(max(-b,0))，保留符号及零系数；不要求 P=N。触及上限后继续分配剩余份额，同侧无重分配空间时保持原值。守恒对象是系数总量。
@@ -191,7 +190,7 @@ job=flowawr-a3-4-3-both-b200-mullet-20261028；Job UID=2eaf58a7-a608-4cef-b63d-b
 证据：utp/receipts/a3-4-3-20261028/first-effective-update-verification.json
 本次只同步运行状态，未新增或刷新评估曲线。
 [/A3.4.3 历史启动状态]"
-A2.13,已停止,,"A2.3 + 全 prompt 共用动态 temperature，energy clipping [-0.5,5]（SD3 + PickScore）",冻结A2.3基线90个文件字节不变，仅新增4个动态温度训练文件；源码SHA256=b3d31dd2fcfab3e30a7cda6becae2ff03855cd2a5847fa34ced70f3715c64424,PickScore（原始分数；eval_reward_pickscore ×26）,"基线 A2.3。reward=PickScore/26；a=(reward−同 prompt 均值)/(本轮全部 reward 标准差+1e-4)。先算全局汇总样本的原始 a，再计算 S_t=sqrt(mean(a²))，不使用已调温后的 a。
+A2.13,已停止,对照固定温度1，以全局信号尺度动态调温，检验维持组内区分度能否延续奖励提升。,动态调温运行后期大幅退化并出现大量非有限梯度，未实现长期稳定。,"A2.3 + 全 prompt 共用动态 temperature，energy clipping [-0.5,5]（SD3 + PickScore）",冻结A2.3基线90个文件字节不变，仅新增4个动态温度训练文件；源码SHA256=b3d31dd2fcfab3e30a7cda6becae2ff03855cd2a5847fa34ced70f3715c64424,PickScore（原始分数；eval_reward_pickscore ×26）,"基线 A2.3。reward=PickScore/26；a=(reward−同 prompt 均值)/(本轮全部 reward 标准差+1e-4)。先算全局汇总样本的原始 a，再计算 S_t=sqrt(mean(a²))，不使用已调温后的 a。
 S_ref 为 step 100–300（含端点，共201轮）的 S_t 均值，随后冻结。S_recent 为最近20轮 S_t 均值，包含当前轮。所有 prompt 共用一个 T，每个全局汇总 rollout 只更新一次。
 step<1000 时 T=1。之后 Q=S_recent/(T_old×S_ref)；0.97≤Q≤1.03 时保持 T，否则 T_new=clip(0.95×T_old+0.05×S_recent/S_ref,2/3,1)。新 T 用于本轮 softmax，允许降温和回温。
 p=同 prompt 内 softmax(clip(a,-5,5)/T)；energy=clip(Kp−1,-0.5,5)，K 取实际合组样本数。原 loss、KL、EMA、global std 与 advantage clip 保持。±3% 是对近期平均信号的容忍区间，不保证每轮区分度都在此范围。","实际运行于Mullet p-syd-mullet，单节点8×B200；node=mi-0d13550ac35de66ac。模型 SD3.5-Medium，512×512；seed=42；fp16；lr=3e-4；KL=1e-4；max_grad_norm=1；EMA=True。
@@ -210,7 +209,7 @@ utp/a2-13-pickscore-dynamic-temperature-b200-mullet-s3.yaml",arnold submit -f ut
 已开始训练，核验时间=2026-10-28T10:03:47.154562+00:00。8个rank均已确认同一global_step=0的有效、未跳过optimizer更新，梯度记录有限；不能仅以Pod Running或初始Eval判断训练开始。job=flowawr-a2-13-dyntemp-b200-20261028；node=mi-0d13550ac35de66ac；pod_uid=7f03d340-a4a8-4583-af09-8537a7bab8a8。
 实际94个源码文件、配置和GPU preflight已核验；clipping[-0.5,5]、动态温度默认参数、fresh seed42及100000epochs保持。首次更新证据只证明至少一次有效更新，不代表最新累计次数或训练效果。
 证据：utp/receipts/a2-13-20261028/first-training-verification.json。"
-A2.14,已停止,,FlowAWR，cosine负侧下界−0.5→−0.7（step1000–1500），正侧+5；A2.3基线，从头独立训练,A2.3基线及现有cosine入口；已冻结源码SHA256=3b705645aa372f0ceed47b3af4d4cfbebc155e578a297f07e153ed2b8f9af3bf；负侧双向插值与CLI覆盖已核验，复用原launcher和已验证B200环境。,PickScore（原始分数；eval_reward_pickscore ×26）,"继承A2.3，保持advantage、softmax、temperature、loss、KL、EMA和学习率不变，仅按global_step调度负侧裁剪下界。
+A2.14,已停止,对照固定-0.5下界，在1000至1500步放宽至-0.7，检验增强负向更新能否突破平台。,完成下界调度后仍有约0.30分回撤，末值约24.06，未证明能稳定突破平台。,FlowAWR，cosine负侧下界−0.5→−0.7（step1000–1500），正侧+5；A2.3基线，从头独立训练,A2.3基线及现有cosine入口；已冻结源码SHA256=3b705645aa372f0ceed47b3af4d4cfbebc155e578a297f07e153ed2b8f9af3bf；负侧双向插值与CLI覆盖已核验，复用原launcher和已验证B200环境。,PickScore（原始分数；eval_reward_pickscore ×26）,"继承A2.3，保持advantage、softmax、temperature、loss、KL、EMA和学习率不变，仅按global_step调度负侧裁剪下界。
 u=clip((global_step−1000)/500,0,1)；lower=−0.5−0.2×(1−cos(πu))/2；energy_used=clip(K×softmax(clip(advantage,−5,5)/T)−1,lower,5)，K为实际同prompt组大小。
 global_step≤1000保持−0.5；1000–1500以半余弦平滑放宽；step1250下界−0.6；global_step≥1500保持−0.7。正侧上界始终+5，T=1。
 每次rollout计算权重前按当前global_step更新下界，所有rank一致；step沿用原计数口径，含AMP跳过的optimizer attempt。1500仅为调度结束点，不是训练停止条件。
@@ -234,7 +233,7 @@ job=flowawr-a2-14-cosine-b200-mullet-20261028；Job UID=ad4fe478-97da-44eb-a10e-
 证据：utp/receipts/a2-14-20261028/first-effective-update-verification.json
 本次只同步运行状态，未新增或刷新评估曲线。
 [/A2.14 运行状态]"
-A3.5,训练中,,"FlowAWR + A3.3 rarity 原 delta 保号 · clip[-0.5,5]（SD3 + PickScore）",保留 A3.3 冻结源码97个成员，仅追加4个独立 sign_preserving 文件；共101成员，source SHA256=ac6a45df533290b8c4979644515897a2956e446928e068268ad39a7ee17de17a。原训练/启动/环境文件不覆盖。,PickScore（原始分数）,"沿用 A3.3：reward=PickScore/26；advantage 为组内中心化后除全局 reward std+1e-4，裁剪[-5,5]，temperature=1；delta=K×softmax(advantage)−1。
+A3.5,已停止,检验保留原始系数符号，能否改善组内去均值稀有性调制的训练稳定性。,保号后仍出现非有限梯度并降至约17.35分，单独保号未解决本次退化。,"FlowAWR + A3.3 rarity 原 delta 保号 · clip[-0.5,5]（SD3 + PickScore）",保留 A3.3 冻结源码97个成员，仅追加4个独立 sign_preserving 文件；共101成员，source SHA256=ac6a45df533290b8c4979644515897a2956e446928e068268ad39a7ee17de17a。原训练/启动/环境文件不覆盖。,PickScore（原始分数）,"沿用 A3.3：reward=PickScore/26；advantage 为组内中心化后除全局 reward std+1e-4，裁剪[-5,5]，temperature=1；delta=K×softmax(advantage)−1。
 固定归一化 PickScore image embedding、Gaussian leave-one-out KDE，h=0.14；s=max(1−density/组均density,0)；u=s×abs(delta)。
 先计算 b_A3.3=clip(delta+u−组均u,−0.5,5)，再按原 delta 保号：delta>0 取 max(b_A3.3,0)，delta<0 取 min(b_A3.3,0)，delta=0 取0；不再次去均值、不重分配总量。
 target_x0=pred_x0_old+b×(x0−pred_x0_old)；其余 loss、KL、采样、optimizer、梯度裁剪及 EMA 沿用 A3.3。独立 fresh seed42，不续训练。","UTP p-syd-mullet；单节点8×B200；实际优先级=1000。
@@ -245,19 +244,19 @@ lr=3e-4；KL=1e-4；max_grad_norm=1；EMA=True；seed=42；resume_from为空。
 rarity.enabled=True；feature_type=pickscore_normalized；bandwidth=0.14；epsilon_minus=0.5；epsilon_plus=5；原delta保号。
 log_raw_data=True；num_epochs=100000；每10 epoch评估/保存；无自动step停止点。
 实际任务：flowawr-a3-5-sign-b200-mullet-20261029
-实际输出：/mnt/shared_storage/jobs/flowawr-a3-5-sign-b200-mullet-20261029/attempts/29b5ec57-957b-4b74-b51b-68bc05af4e58
-S3归档：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a3-5-b200-mullet-20261029/attempts/29b5ec57-957b-4b74-b51b-68bc05af4e58/
+实际输出：/mnt/shared_storage/jobs/flowawr-a3-5-sign-b200-mullet-20261029/attempts/f26cffc0-2ef8-47d1-bc75-e859c82b9200
+S3归档：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a3-5-b200-mullet-20261029/attempts/f26cffc0-2ef8-47d1-bc75-e859c82b9200/
 提交清单：utp/a3-5-pickscore-rarity-sign-preserving-b200-mullet-s3.yaml","config/awr_rarity_sign_preserving.py:sd3_pickscore
 scripts/train_awr_sd3_rarity_sign_preserving.py
-flow_grpo/stat_tracking_rarity_sign_preserving.py",bash scripts/launchers/run_flowawr_sd3_pickscore_rarity_sign_preserving_8gpu.sh,flowawr_sd3_pickscore_rarity_sign_preserving_clip05_5,"[最新结果同步]北京时间11-02 11:38:49固定快照：Eval step 3850，原始PickScore 17.37421083，共386点；来源UID=f26cffc0-2ef8-47d1-bc75-e859c82b9200。该来源的全部标量已导出本地TensorBoard并核验。证据：utp/receipts/all-utp-refresh-20261102/publication/publication-validation.json。逐样本raw/诊断曲线未刷新。[/最新结果同步]
-[A3.5 运行状态]
+flow_grpo/stat_tracking_rarity_sign_preserving.py",bash scripts/launchers/run_flowawr_sd3_pickscore_rarity_sign_preserving_8gpu.sh,flowawr_sd3_pickscore_rarity_sign_preserving_clip05_5,"[停止归档]按用户要求停止，8×B200资源已释放。最后已记录训练step 4131，8rank共同确认从0起4132条更新记录；其中3398条梯度有限且未跳过，最后此类step为3404，734条存在非有限梯度、167条跳过optimizer step；Eval至4130，414点，最终PickScore 17.35231018。40份raw JSONL共30,461,766,192字节已完整归档S3，本地保存可fetch索引；TensorBoard 2,113,964条/100tags已拉到本地并逐值核验。rarity 保持原delta符号，clip[-0.5,5]、h=0.14，不重分配总量；当前独立attempt f26cffc0-2ef8-47d1-bc75-e859c82b9200，历史preemption attempts分别归档且未混接；禁止自动恢复。证据：utp/receipts/a35-stop-20261102/final-records.json。[/停止归档]
+[A3.5 历史启动状态]
 训练中；8个rank共同确认至少2次有效optimizer更新（最后step=1）。从头训练，seed=42，resume_from为空；A3.3 保号变体，clip=[−0.5,5]、h=0.14。
 提交：2026-10-29T04:10:15Z；核验：2026-10-29T05:33:51.877861+00:00。
 job=flowawr-a3-5-sign-b200-mullet-20261029；Job UID=94bfe215-3a51-43e9-97a1-bb5877193a45；Pod UID=29b5ec57-957b-4b74-b51b-68bc05af4e58。
 证据：utp/receipts/a3-5-20261029/followup/attempts/29b5ec57-957b-4b74-b51b-68bc05af4e58/first-training-verification.json
 本次只同步运行状态，未新增或刷新评估曲线。
-[/A3.5 运行状态]"
-A3.4.1.1,已停止,,"FlowAWR + rarity 只正侧保总量重分配 · clip[-0.5,5]（A3.4.1对照）",逐字节复用 A3.4.1 冻结源码101个成员，source SHA256=2be807be7e49365ad04566a4e9721e65baadf0442d8cb283ac562d7a0333c8f5。继续使用positive preset，仅以配置覆盖裁剪边界和独立run_name；训练/启动/环境逻辑不变。,PickScore（原始分数）,"以 A3.4.1 为直接对照，唯一算法配置变化是裁剪边界由[-3,3]改为[-0.5,5]。reward=PickScore/26；advantage 为组内中心化后除全局 reward std+1e-4，裁剪[-5,5]，temperature=1；delta=K×softmax(advantage)−1。
+[/A3.5 历史启动状态]"
+A3.4.1.1,已停止,检验非对称energy裁剪，能否改善正侧保总量重分配的奖励与稳定性。,后期出现非有限梯度并降至约18.87分，当前设置未避免本次训练退化。,"FlowAWR + rarity 只正侧保总量重分配 · clip[-0.5,5]（A3.4.1对照）",逐字节复用 A3.4.1 冻结源码101个成员，source SHA256=2be807be7e49365ad04566a4e9721e65baadf0442d8cb283ac562d7a0333c8f5。继续使用positive preset，仅以配置覆盖裁剪边界和独立run_name；训练/启动/环境逻辑不变。,PickScore（原始分数）,"以 A3.4.1 为直接对照，唯一算法配置变化是裁剪边界由[-3,3]改为[-0.5,5]。reward=PickScore/26；advantage 为组内中心化后除全局 reward std+1e-4，裁剪[-5,5]，temperature=1；delta=K×softmax(advantage)−1。
 固定归一化 PickScore image embedding、Gaussian leave-one-out KDE，h=0.14；s=max(1−density/组均density,0)。
 先计算 b=clip(delta,−0.5,5)。仅正侧按 q_i=b_i(1+0.5s_i)，b_new_i=min(5,a_plus×q_i) 重分配；组内公共正数 a_plus 使正侧系数总量 P 保持不变；b_i≤0逐个保持原值。
 每个prompt组、每个训练时间列分别保持正侧总量P和负侧绝对值总量N，保留符号与零系数，不要求P=N。负侧strength配置仍为0.5但positive模式不使用它。
@@ -281,7 +280,7 @@ job=flowawr-a3-4-1-1-b200-mullet-20261029；Job UID=8c9ac84f-417f-4d49-8f5c-0499
 证据：utp/receipts/a3-4-1-1-20261029/first-effective-update-verification.json
 本次只同步运行状态，未新增或刷新评估曲线。
 [/A3.4.1.1 运行状态]"
-A4.3,已停止,,"FlowAWR + 负侧残差与offset归一化 · clip[-0.5,5]（SD3 + PickScore）",原repo训练入口与配置的独立最小修改副本；冻结源码共141个成员；source SHA256=b01e16ec2b83f3e6d60aebc2a7bf4f78f9ad6fc1b68ab636b57a4d34ee1e4f76。原训练/启动/环境文件不覆盖。,PickScore（原始分数）,"以 A1 为基线，b=clip(b_raw,-0.5,5)；r=x_rollout-x_old，Delta=x_current-x_old，A=max(MAE(x_current-x_rollout),1e-5)。
+A4.3,已停止,检验结合残差与current–old偏移扩大负侧损失分母，能否抑制异常更新。,存档至2700步奖励平稳提升，但平台中断前最终输出不全，仍需独立复验。,"FlowAWR + 负侧残差与offset归一化 · clip[-0.5,5]（SD3 + PickScore）",原repo训练入口与配置的独立最小修改副本；冻结源码共141个成员；source SHA256=b01e16ec2b83f3e6d60aebc2a7bf4f78f9ad6fc1b68ab636b57a4d34ee1e4f76。原训练/启动/环境文件不覆盖。,PickScore（原始分数）,"以 A1 为基线，b=clip(b_raw,-0.5,5)；r=x_rollout-x_old，Delta=x_current-x_old，A=max(MAE(x_current-x_rollout),1e-5)。
 正侧及零系数使用原分母A；负侧w=max(sqrt(A^2+4*MSE(Delta)),MSE(r)/(2.2*sigma_t))，分母整体停止梯度。
 sigma_t为上一完整梯度累积轮中、所有rank/所有符号样本、按实际scheduler timestep统计的RMS(r)全局中位数；本轮内冻结，无EMA/外部参考表；首轮或缺失t仅offset分支。
 policy loss=MSE(Delta-b*r)/stopgrad(w)；其余KL、采样、optimizer、梯度裁剪及EMA沿用原repo。独立fresh seed42，不续训练。","UTP p-syd-mullet；单节点8×B200；实际优先级=1000。
@@ -304,7 +303,7 @@ job=flowawr-negative-residual-norm-b200-20261029；Job UID=a52e2713-21ea-403d-8c
 证据：utp/receipts/negative-residual-norm-b200-20261029/first-effective-update-verification.json
 本次只同步运行状态，未新增或刷新评估曲线。
 [/A4.3 运行状态]"
-A2.15,训练中,,"FlowAWR · 固定裁剪[-0.6,5]（A1对照，独立8×B200）",复用冻结源码90个文件；SHA256=1834b1af0a4b3c3e0ac44874a79c6451d43862b5515fd6647139e00f3c13cf54；训练、启动、环境逻辑不变。,PickScore（原始分数）,"A1算法基线，energy裁剪边界改为[-0.6,5]。逐字节复用A2.3.1/A2.9已验证冻结源码，仅CLI覆盖energy_min=-0.6、energy_max=5和独立run_name；其余训练协议不变。独立fresh seed42，不续训练。","UTP p-syd-mullet；单节点8×B200；seed=42；resume_from为空；energy_clip=[-0.6,5]；lr=3e-4；KL=1e-4；max_grad_norm=1；EMA=True。
+A2.15,已停止,固定正侧上界5，对照-0.5和-0.7下界，检验中间下界-0.6的稳定性与奖励收益。,负侧残差先于回撤异常增大，固定系数限幅不足以限制实际修正幅度。,"FlowAWR · 固定裁剪[-0.6,5]（A1对照，独立8×B200）",复用冻结源码90个文件；SHA256=1834b1af0a4b3c3e0ac44874a79c6451d43862b5515fd6647139e00f3c13cf54；训练、启动、环境逻辑不变。,PickScore（原始分数）,"A1算法基线，energy裁剪边界改为[-0.6,5]。逐字节复用A2.3.1/A2.9已验证冻结源码，仅CLI覆盖energy_min=-0.6、energy_max=5和独立run_name；其余训练协议不变。独立fresh seed42，不续训练。","UTP p-syd-mullet；单节点8×B200；seed=42；resume_from为空；energy_clip=[-0.6,5]；lr=3e-4；KL=1e-4；max_grad_norm=1；EMA=True。
 SD3.5-Medium；512×512；LoRA r=32 alpha=64；每卡batch9、rollout batches16、gradient_accumulation_steps16；1152图/更新、每图9个训练时间点。
 训练/评估采样步数10/40；guidance_scale=1；DPM2；temperature=1；global_std=True；adv_clip_max=5；hard_gating=False。
 log_raw_data=True；num_epochs=100000；每10 epoch评估/保存；无自动step停止点。
@@ -314,14 +313,14 @@ Job UID：c1c7acfd-68f0-4c19-83aa-04e3f53c363e
 输出：/mnt/shared_storage/jobs/flowawr-a2-15-eclip-b200-mullet-20261029/attempts/31630ed1-6e2f-4b73-bdd8-0b1ac6ee49fd
 S3：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a2-15-b200-mullet-20261029/attempts/31630ed1-6e2f-4b73-bdd8-0b1ac6ee49fd/
 提交清单：utp/a2-15-pickscore-eclip-b200-mullet-s3.yaml","config/awr_energy_clip.py:sd3_pickscore_eclip_m0p5_p5
-scripts/train_awr_sd3_energy_clip.py",bash scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh --config.train.energy_min=-0.6 --config.train.energy_max=5.0 --config.run_name=flowawr_sd3_pickscore_eclip_m0.6_p5,flowawr_sd3_pickscore_eclip_m0.6_p5,"[最新结果同步]北京时间11-02 11:38:44固定快照：Eval step 3590，原始PickScore 24.14450538，共360点；来源UID=31630ed1-6e2f-4b73-bdd8-0b1ac6ee49fd。该来源的全部标量已导出本地TensorBoard并核验。证据：utp/receipts/all-utp-refresh-20261102/publication/publication-validation.json。逐样本raw/诊断曲线未刷新。[/最新结果同步]
+scripts/train_awr_sd3_energy_clip.py",bash scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh --config.train.energy_min=-0.6 --config.train.energy_max=5.0 --config.run_name=flowawr_sd3_pickscore_eclip_m0.6_p5,flowawr_sd3_pickscore_eclip_m0.6_p5,"[停止归档]按用户要求停止，8×B200资源已释放。最后已记录训练step 4584，8rank共同确认从0起4585条更新记录；其中4572条梯度有限且未跳过，最后此类step为4576，13条存在非有限梯度、13条跳过optimizer step；Eval至4580，459点，最终PickScore 24.35766327。40份raw JSONL共31,256,638,063字节已完整归档S3，本地保存可fetch索引；TensorBoard 2,334,447条/94tags已拉到本地并逐值核验。A1基线固定energy [-0.6,5]；禁止自动恢复。证据：utp/receipts/a2-15-stop-20261103/final-records.json。[/停止归档]
 [A2.15 运行状态]
 训练中；确认有效optimizer更新数=1；最后step=1。
 提交：2026-10-29T12:11:58.402382+00:00；核验：2026-10-29T12:33:33.320685+00:00。
 证据：utp/receipts/a2-15-20261029/effective-update-verifications/fcf2f5196f0857d2fe6d3d20601602a89fd0806783ceedd9511083cdc1b3efab.json
 只同步状态，未刷新评估或诊断曲线。
 [/A2.15 运行状态]"
-A4.4,已停止,,"FlowAWR + 未加权残差RMS裁剪0.75 · energy clip[-0.5,5]（SD3 + PickScore）",原repo训练入口与配置的独立最小修改副本；冻结源码共144个成员；source SHA256=0b0d8de9ea0f17c9311317d5c8e5f20e74537983e5855be9a1eac823e070092e。原训练/启动/环境文件不覆盖。,PickScore（原始分数）,"以 A1 为基线，energy=clip(energy_raw,-0.5,5)；r=x0-pred_x0_old。
+A4.4,已停止,检验双侧未加权残差RMS裁剪至0.75，能否抑制异常校正及奖励回撤。,固定0.75阈值的选择性随t变化，虽压低绝对残差，仍未消除本次奖励回撤。,"FlowAWR + 未加权残差RMS裁剪0.75 · energy clip[-0.5,5]（SD3 + PickScore）",原repo训练入口与配置的独立最小修改副本；冻结源码共144个成员；source SHA256=0b0d8de9ea0f17c9311317d5c8e5f20e74537983e5855be9a1eac823e070092e。原训练/启动/环境文件不覆盖。,PickScore（原始分数）,"以 A1 为基线，energy=clip(energy_raw,-0.5,5)；r=x0-pred_x0_old。
 对每个样本、每个实际训练时间点，在latent维计算RMS(r)，s=min(1,0.75/RMS(r))，零残差保持不变；r_clip=s*r，整体等比例缩放保留方向。
 阈值不包含energy，不除以t；正负及零energy样本采用同一残差裁剪规则。target=pred_x0_old+energy*r_clip。
 原weight factor保持不变：stopgrad(max(mean_latent(abs(x_current-x0)),1e-5))。其余KL、采样、optimizer、梯度裁剪及EMA沿用原repo。独立fresh seed42，不续训练。","UTP p-syd-mullet；单节点8×B200；实际优先级=1000。
@@ -343,7 +342,7 @@ job=flowawr-residual-clip-b200-20261029；Job UID=850a9b89-350a-4fcb-b649-1991c0
 证据：utp/receipts/residual-clip-b200-20261029/startup/latest-training-probe.json
 当时仅同步启动状态，未新增或刷新评估曲线；当前状态以以上停止归档记录为准。
 [/A4.4 历史启动核验（2026-10-29）]"
-A2.16,已停止,,"FlowAWR · 正负两侧分别按组内极值缩放 · bounds[-0.5,5]","科学3文件保持不变；远端145文件hash全通过；正确阈值[-0.5,5]通过CLI覆写且实际配置已核验。源码SHA256=b92d8de8a398890056d50c805301991aae64c3b4fc06f1a6f07580ca2d7547af；新release manifest=utp/artifacts/a2-16-m0p5-p5-20261029/a2-16-source-manifest.json",PickScore（原始分数）,"沿用A1的reward标准化、advantage clipping、softmax与K*p−1 energy。跨rank汇总同prompt组；正侧统一乘5/max(M+,5)，负侧统一乘0.5/max(M−,0.5)，未越界不放大。仅替换原逐样本energy clip；不先hard clip、不做正负总量平衡。阈值通过launcher/CLI覆写；三个独立科学代码文件不变。独立fresh seed42，不续训练。","UTP p-syd-mullet，单节点8×NVIDIA B200已实测确认；high-priority。
+A2.16,已停止,对照逐样本硬裁剪，改按组内正负极值分别缩放，检验保留侧内比例是否更稳定。,两侧分别缩放后前期奖励跌破初始值，说明缩小系数幅度并不保证训练稳定。,"FlowAWR · 正负两侧分别按组内极值缩放 · bounds[-0.5,5]","科学3文件保持不变；远端145文件hash全通过；正确阈值[-0.5,5]通过CLI覆写且实际配置已核验。源码SHA256=b92d8de8a398890056d50c805301991aae64c3b4fc06f1a6f07580ca2d7547af；新release manifest=utp/artifacts/a2-16-m0p5-p5-20261029/a2-16-source-manifest.json",PickScore（原始分数）,"沿用A1的reward标准化、advantage clipping、softmax与K*p−1 energy。跨rank汇总同prompt组；正侧统一乘5/max(M+,5)，负侧统一乘0.5/max(M−,0.5)，未越界不放大。仅替换原逐样本energy clip；不先hard clip、不做正负总量平衡。阈值通过launcher/CLI覆写；三个独立科学代码文件不变。独立fresh seed42，不续训练。","UTP p-syd-mullet，单节点8×NVIDIA B200已实测确认；high-priority。
 配置入口：config/awr_side_rescale.py:sd3_pickscore；CLI覆写energy_min=-0.5、energy_max=5.0，三个科学代码文件保持不变。
 SD3.5-Medium；512×512；LoRA r=32 alpha=64；lr=3e-4；KL=1e-4；max_grad_norm=1；EMA=True；seed=42；resume_from为空。
 每卡batch9；rollout batches16；gradient_accumulation_steps16；1152图/更新=48次prompt抽样×24；每图9个训练时间点。
@@ -367,7 +366,7 @@ Pod UID：b563de97-6a63-4b8f-8260-7859ea886037
 旧[-3,3]attempt已停止，旧raw/Eval按UID排除，未用于本次验证。
 证据：utp/receipts/a2-16-m0p5-p5-20261029/first-training-verification.json
 [/A2.16 运行状态]"
-A4.5,已停止,,FlowAWR + energy×残差双侧RMS裁剪1.0（SD3 + PickScore）,原repo训练入口与配置的独立最小修改副本；冻结源码共144个成员；source SHA256=2a3821ae98e31fcf9a43847e79b605de01529be157b8dbf880e55127ffc6e0de。原训练/启动/环境文件不覆盖。,PickScore（原始分数）,"以 A1 为基线，energy=energy_raw，不再单独裁剪energy；q=energy_raw*(x0-pred_x0_old)。
+A4.5,已停止,检验直接裁剪含energy的校正RMS至1，能否替代单独系数裁剪并稳定训练。,本次奖励提升但仍有梯度异常，负侧离群样本是否主导有害更新尚未证实。,FlowAWR + energy×残差双侧RMS裁剪1.0（SD3 + PickScore）,原repo训练入口与配置的独立最小修改副本；冻结源码共144个成员；source SHA256=2a3821ae98e31fcf9a43847e79b605de01529be157b8dbf880e55127ffc6e0de。原训练/启动/环境文件不覆盖。,PickScore（原始分数）,"以 A1 为基线，energy=energy_raw，不再单独裁剪energy；q=energy_raw*(x0-pred_x0_old)。
 对每个样本、每个实际训练时间点，在latent维计算RMS(q)，s=min(1,1.0/RMS(q))，零校正保持不变；q_clip=s*q，整体等比例缩放保留方向。
 正负两侧使用同一RMS阈值1.0，不除以t；target=pred_x0_old+q_clip。weights记录原始energy，training_terms.energy_used记录实际有效系数energy_raw*s。
 原weight factor保持不变：stopgrad(max(mean_latent(abs(x_current-x0)),1e-5))。其余KL、采样、optimizer、梯度裁剪及EMA沿用原repo。独立fresh seed42，不续训练。","UTP p-syd-mullet；单节点8×B200；实际优先级=1000。
@@ -389,7 +388,7 @@ job=flowawr-correction-clip-b200-20261029；Job UID=c2759bc8-e166-40e2-a11f-ca24
 证据：utp/receipts/correction-clip-b200-20261029/startup/latest-training-probe.json
 本次只同步运行状态，未新增或刷新评估曲线。
 [/A4.5 运行状态]"
-A2.17,训练中,,"FlowAWR · 固定裁剪[-0.5,6]（A1对照，独立8×B200）",复用冻结源码90个文件；SHA256=1834b1af0a4b3c3e0ac44874a79c6451d43862b5515fd6647139e00f3c13cf54；训练、启动、环境逻辑不变。,PickScore（原始分数）,"A1算法基线，energy裁剪边界改为[-0.5,6]。逐字节复用A2.3.1/A2.9已验证冻结源码，仅CLI覆盖energy_min=-0.5、energy_max=6和独立run_name；其余训练协议不变。独立fresh seed42，不续训练。","UTP p-syd-mullet；单节点8×B200；CPU80、内存180Gi；seed=42；resume_from为空；energy_clip=[-0.5,6]；lr=3e-4；KL=1e-4；max_grad_norm=1；EMA=True。
+A2.17,已停止,固定负侧下界-0.5，将正侧上界由5放宽至6，检验保留较大正系数能否增加收益。,上界放宽至6后仍有后期回撤和非有限梯度，未解决长期失稳。,"FlowAWR · 固定裁剪[-0.5,6]（A1对照，独立8×B200）",复用冻结源码90个文件；SHA256=1834b1af0a4b3c3e0ac44874a79c6451d43862b5515fd6647139e00f3c13cf54；训练、启动、环境逻辑不变。,PickScore（原始分数）,"A1算法基线，energy裁剪边界改为[-0.5,6]。逐字节复用A2.3.1/A2.9已验证冻结源码，仅CLI覆盖energy_min=-0.5、energy_max=6和独立run_name；其余训练协议不变。独立fresh seed42，不续训练。","UTP p-syd-mullet；单节点8×B200；CPU80、内存180Gi；seed=42；resume_from为空；energy_clip=[-0.5,6]；lr=3e-4；KL=1e-4；max_grad_norm=1；EMA=True。
 SD3.5-Medium；512×512；LoRA r=32 alpha=64；每卡batch9、rollout batches16、gradient_accumulation_steps16；1152图/更新、每图9个训练时间点。
 训练/评估采样步数10/40；guidance_scale=1；DPM2；temperature=1；global_std=True；adv_clip_max=5；hard_gating=False。
 log_raw_data=True；num_epochs=100000；每10 epoch评估/保存；无自动step停止点。
@@ -399,14 +398,14 @@ Job UID：0325248e-287c-4662-b058-31092a305104
 输出：/mnt/shared_storage/jobs/flowawr-a2-17-eclip-b200-mullet-20261030/attempts/125a5ad4-e18d-4556-8c53-df804105ea91
 S3：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a2-17-b200-mullet-20261030/attempts/125a5ad4-e18d-4556-8c53-df804105ea91/
 提交清单：utp/a2-17-pickscore-eclip-b200-mullet-s3.yaml","config/awr_energy_clip.py:sd3_pickscore_eclip_m0p5_p5
-scripts/train_awr_sd3_energy_clip.py",bash scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh --config.train.energy_min=-0.5 --config.train.energy_max=6.0 --config.run_name=flowawr_sd3_pickscore_eclip_m0p5_p6_a2_17,flowawr_sd3_pickscore_eclip_m0p5_p6_a2_17,"[最新结果同步]北京时间11-02 11:38:44固定快照：Eval step 2950，原始PickScore 23.50300622，共296点；来源UID=125a5ad4-e18d-4556-8c53-df804105ea91。该来源的全部标量已导出本地TensorBoard并核验。证据：utp/receipts/all-utp-refresh-20261102/publication/publication-validation.json。逐样本raw/诊断曲线未刷新。[/最新结果同步]
-[A2.17 运行状态]
+scripts/train_awr_sd3_energy_clip.py",bash scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh --config.train.energy_min=-0.5 --config.train.energy_max=6.0 --config.run_name=flowawr_sd3_pickscore_eclip_m0p5_p6_a2_17,flowawr_sd3_pickscore_eclip_m0p5_p6_a2_17,"[停止归档]按用户要求停止，8×B200资源已释放。最后已记录训练step 3322，8rank共同确认从0起3323条更新记录；其中2633条梯度有限且未跳过，最后此类step为2688，690条存在非有限梯度、167条跳过optimizer step；Eval至3320，333点，最终PickScore 23.51377523。40份raw JSONL共22,940,578,236字节已完整归档S3，本地保存可fetch索引；TensorBoard 1,696,300条/94tags已拉到本地并逐值核验。固定 energy clipping [-0.5,6]，独立 fresh seed42；禁止自动恢复。证据：utp/receipts/a217-stop-20261102/final-records.json。[/停止归档]
+[A2.17 历史运行状态（已由上述停止归档记录取代）]
 训练中；确认有效optimizer更新数=1；最后step=2。
 提交：2026-10-30T03:26:03.179835+00:00；核验：2026-10-30T03:46:29.060275+00:00。
 证据：utp/receipts/a2-17-20261030/effective-update-verifications/9c40cc3220c01973abc61a86bccf1c7ac366eee393ee97f2cd5829ac5a2041d5.json
 只同步状态，未刷新评估或诊断曲线。
-[/A2.17 运行状态]"
-A2.18,训练中,"对比A1默认[-3,3]，检查仅把energy clipping改为[-0.6,10]对PickScore提升与训练稳定性的影响。","FlowAWR · 固定裁剪[-0.6,10]（A1对照，独立8×B200）",复用冻结源码90个文件；SHA256=1834b1af0a4b3c3e0ac44874a79c6451d43862b5515fd6647139e00f3c13cf54；训练、启动、环境逻辑不变。,PickScore（原始分数）,"A1算法基线，energy裁剪边界改为[-0.6,10]。逐字节复用A2.3.1/A2.9已验证冻结源码，仅CLI覆盖energy_min=-0.6、energy_max=10和独立run_name；其余科学参数沿用A1；历史A1为16GPU、rollout/accum=8/8，本次8B200使用16/16，维持1152图/更新。独立fresh seed42，不续训练。","UTP p-syd-mullet；单节点8×B200；CPU80、内存180Gi；seed=42；resume_from为空；energy_clip=[-0.6,10]；lr=3e-4；KL=1e-4；max_grad_norm=1；EMA=True。
+[/A2.17 历史运行状态]"
+A2.18,已停止,对照A2.15将正侧上界由5放宽至10，检验-0.6下界下保留较大正系数的影响。,,"FlowAWR · 固定裁剪[-0.6,10]（A1对照，独立8×B200）",复用冻结源码90个文件；SHA256=1834b1af0a4b3c3e0ac44874a79c6451d43862b5515fd6647139e00f3c13cf54；训练、启动、环境逻辑不变。,PickScore（原始分数）,"A1算法基线，energy裁剪边界改为[-0.6,10]。逐字节复用A2.3.1/A2.9已验证冻结源码，仅CLI覆盖energy_min=-0.6、energy_max=10和独立run_name；其余科学参数沿用A1；历史A1为16GPU、rollout/accum=8/8，本次8B200使用16/16，维持1152图/更新。独立fresh seed42，不续训练。","UTP p-syd-mullet；单节点8×B200；CPU80、内存180Gi；seed=42；resume_from为空；energy_clip=[-0.6,10]；lr=3e-4；KL=1e-4；max_grad_norm=1；EMA=True。
 SD3.5-Medium；512×512；LoRA r=32 alpha=64；每卡batch9、rollout batches16、gradient_accumulation_steps16；1152图/更新、每图9个训练时间点。
 训练/评估采样步数10/40；guidance_scale=1；DPM2；temperature=1；global_std=True；adv_clip_max=5；hard_gating=False。
 log_raw_data=True；num_epochs=100000；每10 epoch评估/保存；无自动step停止点。
@@ -416,7 +415,8 @@ Job UID：ea27caa9-9cd9-495b-8ee1-c215d093e801
 输出：/mnt/shared_storage/jobs/flowawr-a2-18-eclip-b200-mullet-20261102-r1/attempts/5969b7bc-eb9a-4b1c-925e-43da265ebaf6
 S3：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a2-18-b200-mullet-20261102/attempts/5969b7bc-eb9a-4b1c-925e-43da265ebaf6/
 提交清单：utp/a2-18-pickscore-eclip-b200-mullet-r1-s3.yaml","config/awr_energy_clip.py:sd3_pickscore_eclip_m0p5_p5
-scripts/train_awr_sd3_energy_clip.py",bash scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh --config.train.energy_min=-0.6 --config.train.energy_max=10.0 --config.run_name=flowawr_sd3_pickscore_eclip_m0p6_p10_a2_18,flowawr_sd3_pickscore_eclip_m0p6_p10_a2_18,"[A2.18 运行状态]
+scripts/train_awr_sd3_energy_clip.py",bash scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh --config.train.energy_min=-0.6 --config.train.energy_max=10.0 --config.run_name=flowawr_sd3_pickscore_eclip_m0p6_p10_a2_18,flowawr_sd3_pickscore_eclip_m0p6_p10_a2_18,"[停止归档]按用户要求停止，8×B200资源已释放。最后已记录训练step 1322，8rank共同确认从0起1323条更新记录；其中1323条梯度有限且未跳过，最后此类step为1322，0条存在非有限梯度、0条跳过optimizer step；Eval至1320，133点，最终PickScore 24.03379643。40份raw JSONL共9,182,215,797字节已完整归档S3，本地保存可fetch索引；TensorBoard 671,930条/94tags已拉到本地并逐值核验。energy [-0.6,10]；禁止自动恢复。证据：utp/receipts/a2-18-stop-20261103/final-records.json。[/停止归档]
+[A2.18 运行状态]
 训练中；确认有效optimizer更新数=1；最后step=1。
 提交：2026-11-02T05:35:59.457618+00:00；核验：2026-11-02T05:55:33.635073+00:00。
 证据：utp/receipts/a2-18-migrate-20261102/startup/latest-training-probe.json
@@ -424,7 +424,7 @@ scripts/train_awr_sd3_energy_clip.py",bash scripts/launchers/run_a2_3_flowawr_sd
 8卡实际有效功率上限=1000W；默认=1000W；正常功率核验=True。
 功率采样阶段=independent_loaded_power_sample；采样时间=2026-11-02T05:50:14.228689+00:00；当时GPU利用率=99,100%；独立负载功率核验=已完成。
 [/A2.18 运行状态]"
-A2.19,训练中,"对比A1默认[-3,3]，检查仅把energy clipping改为[-0.5,10]对PickScore提升与训练稳定性的影响。","FlowAWR · 固定裁剪[-0.5,10]（A1对照，独立8×B200）",复用冻结源码90个文件；SHA256=1834b1af0a4b3c3e0ac44874a79c6451d43862b5515fd6647139e00f3c13cf54；训练、启动、环境逻辑不变。,PickScore（原始分数）,"A1算法基线，energy裁剪边界改为[-0.5,10]。逐字节复用A2.3.1/A2.9已验证冻结源码，仅CLI覆盖energy_min=-0.5、energy_max=10和独立run_name；其余科学参数沿用A1；历史A1为16GPU、rollout/accum=8/8，本次8B200使用16/16，维持1152图/更新。独立fresh seed42，不续训练。","UTP p-syd-mullet；单节点8×B200；CPU80、内存180Gi；seed=42；resume_from为空；energy_clip=[-0.5,10]；lr=3e-4；KL=1e-4；max_grad_norm=1；EMA=True。
+A2.19,已停止,固定负侧下界-0.5，将上界放宽至10，并与A2.18比较负侧限幅强度的影响。,,"FlowAWR · 固定裁剪[-0.5,10]（A1对照，独立8×B200）",复用冻结源码90个文件；SHA256=1834b1af0a4b3c3e0ac44874a79c6451d43862b5515fd6647139e00f3c13cf54；训练、启动、环境逻辑不变。,PickScore（原始分数）,"A1算法基线，energy裁剪边界改为[-0.5,10]。逐字节复用A2.3.1/A2.9已验证冻结源码，仅CLI覆盖energy_min=-0.5、energy_max=10和独立run_name；其余科学参数沿用A1；历史A1为16GPU、rollout/accum=8/8，本次8B200使用16/16，维持1152图/更新。独立fresh seed42，不续训练。","UTP p-syd-mullet；单节点8×B200；CPU80、内存180Gi；seed=42；resume_from为空；energy_clip=[-0.5,10]；lr=3e-4；KL=1e-4；max_grad_norm=1；EMA=True。
 禁用有效功率限制200W的B卡；候选为29个非已知200W的Ready B200八卡节点，硬性排除两台已知200W节点；名单见preflight/ELIGIBLE_NODES.json。分配后须实测8卡enforced power limit达到默认功率的99%以上（默认至少900W），通过后才发布READY启动。
 SD3.5-Medium；512×512；LoRA r=32 alpha=64；每卡batch9、rollout batches16、gradient_accumulation_steps16；1152图/更新、每图9个训练时间点。
 训练/评估采样步数10/40；guidance_scale=1；DPM2；temperature=1；global_std=True；adv_clip_max=5；hard_gating=False。
@@ -435,20 +435,22 @@ Job UID：671f445f-7fe2-471c-8797-c449e44ca491
 输出：/mnt/shared_storage/jobs/flowawr-a2-19-eclip-b200-mullet-20261102/attempts/02e0cac7-792f-4148-960d-2b66355fcfa0
 S3：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a2-19-b200-mullet-20261102/attempts/02e0cac7-792f-4148-960d-2b66355fcfa0/
 提交清单：utp/a2-19-pickscore-eclip-b200-mullet-s3.yaml","config/awr_energy_clip.py:sd3_pickscore_eclip_m0p5_p5
-scripts/train_awr_sd3_energy_clip.py",bash scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh --config.train.energy_min=-0.5 --config.train.energy_max=10.0 --config.run_name=flowawr_sd3_pickscore_eclip_m0p5_p10_a2_19,flowawr_sd3_pickscore_eclip_m0p5_p10_a2_19,"[A2.19 运行状态]
+scripts/train_awr_sd3_energy_clip.py",bash scripts/launchers/run_a2_3_flowawr_sd3_pickscore_eclip_8gpu.sh --config.train.energy_min=-0.5 --config.train.energy_max=10.0 --config.run_name=flowawr_sd3_pickscore_eclip_m0p5_p10_a2_19,flowawr_sd3_pickscore_eclip_m0p5_p10_a2_19,"[停止归档]按用户要求停止，8×B200资源已释放。最后已记录训练step 1300，8rank共同确认从0起1301条更新记录；其中1301条梯度有限且未跳过，最后此类step为1300，0条存在非有限梯度、0条跳过optimizer step；Eval至1300，131点，最终PickScore 23.99467683。40份raw JSONL共9,026,048,599字节已完整归档S3，本地保存可fetch索引；TensorBoard 665,204条/94tags已拉到本地并逐值核验。energy [-0.5,10]；禁止自动恢复。证据：utp/receipts/a2-19-stop-20261103/final-records.json。[/停止归档]
+[A2.19 运行状态]
 训练中；确认有效optimizer更新数=1；最后step=1。
 提交：2026-11-02T05:51:57.247453+00:00；核验：2026-11-02T06:12:54.544452+00:00。
 证据：utp/receipts/a2-19-20261102/effective-update-verifications/79967852c0a7b6da87456a20e51b184348800fee0156fc68c34432a5ca08dfa4.json
 只同步状态，未刷新评估或诊断曲线。
 8卡实际有效功率上限=1000W；默认=1000W；正常功率核验=True。
 [/A2.19 运行状态]"
-A1.8,训练中,测量A1 baseline逐样本、逐实际t的old norm及correction/old、实际修正/old范围。,A1 baseline新增old日志；独立8×B200；1000步诊断实验。,冻结A1.1源文件保留；独立日志入口；source SHA256=97db656137f36c98638d9ce06d97595425408dc61920314953ae606a6f3c2552,PickScore（原始分数）,"A1科学基线：energy[-3,3]，无correction clipping；只增加old_l2/old_rms/x0_l2/current_l2/old_residual_dot日志。独立fresh seed42；原A1为16卡，本次8卡rollout/accum=16/16，维持1152图/更新。","SD3.5-Medium，512×512，LoRA r32/alpha64；lr=3e-4，KL=1e-4，fp16，temperature=1；每组24图，每步1152图、每图9个t；num_epochs=1000，约1000次更新后自然结束；eval/save每10步；8×B200，80CPU/180Gi；排除两台已知200W节点并核验实际功率。
+A1.8,已完成,测量旧预测尺度及时间依赖，为相对旧预测的残差裁剪阈值提供依据。,,A1 baseline新增old日志；独立8×B200；1000步诊断实验。,冻结A1.1源文件保留；独立日志入口；source SHA256=97db656137f36c98638d9ce06d97595425408dc61920314953ae606a6f3c2552,PickScore（原始分数）,"A1科学基线：energy[-3,3]，无correction clipping；只增加old_l2/old_rms/x0_l2/current_l2/old_residual_dot日志。独立fresh seed42；原A1为16卡，本次8卡rollout/accum=16/16，维持1152图/更新。","SD3.5-Medium，512×512，LoRA r32/alpha64；lr=3e-4，KL=1e-4，fp16，temperature=1；每组24图，每步1152图、每图9个t；num_epochs=1000，约1000次更新后自然结束；eval/save每10步；8×B200，80CPU/180Gi；排除两台已知200W节点并核验实际功率。
 config/awr_old_norm_log.py:sd3_pickscore
 flowawr-a1-8-old-norm-b200-mullet-20261102","scripts/train_awr_sd3_old_norm_log.py
-flow_grpo/pickscore_old_norm_logging.py",bash scripts/launchers/run_a1_8_flowawr_sd3_pickscore_old_norm_8gpu.sh,flowawr_sd3_pickscore_old_norm_a1_8,"训练中；已确认完整更新数=5；观测时间=2026-11-02T08:30:14.840995+00:00
+flow_grpo/pickscore_old_norm_logging.py",bash scripts/launchers/run_a1_8_flowawr_sd3_pickscore_old_norm_8gpu.sh,flowawr_sd3_pickscore_old_norm_a1_8,"[最新结果同步]最新可用S3归档（源对象最后修改时间：北京时间11-03 16:40:39；下载时间：北京时间11-03 21:28:01）：Eval step 990，原始PickScore 23.99888587，共100点；来源UID=e9c0fd5c-857e-4cd0-96db-899d9f9eea2e。该来源的全部标量已导出本地TensorBoard并核验。平台UID与状态已于北京时间11-03 21:25:45独立核验；标量来源仍为上述S3归档。证据：utp/receipts/all-utp-refresh-20261103-afternoon/publication/publication-validation.json。逐样本raw/诊断曲线未刷新。[/最新结果同步]
+训练中；已确认完整更新数=5；观测时间=2026-11-02T08:30:14.840995+00:00
 s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a1-8-old-norm-b200-mullet-20261102/attempts/e9c0fd5c-857e-4cd0-96db-899d9f9eea2e/
 证据：utp/receipts/a1-8-old-norm-20261102/startup/latest-training-probe.json"
-A4.6,训练中,保持A4.3 weight factor设计不变，比较energy clipping下界从-0.5改为-0.6对PickScore和训练稳定性的影响。,"A4.3对照：负侧残差与offset归一化；energy clip[-0.6,5]；独立8×B200。",逐字节复用A4.3冻结源码141个文件；source SHA256=b01e16ec2b83f3e6d60aebc2a7bf4f78f9ad6fc1b68ab636b57a4d34ee1e4f76；复用原训练器、配置与launcher，仅CLI参数和独立运行身份变化。,PickScore（原始分数；eval_reward/pickscore日志值×26）,"以A4.3为直接对照，唯一科学参数变化为b=clip(b_raw,-0.6,5)。r=x_rollout-x_old，Delta=x_current-x_old，A=max(MAE(x_current-x_rollout),1e-5)。
+A4.6,已停止,检验将A4.3负侧energy下界放宽至-0.6，能否改善奖励并维持稳定。,,"A4.3对照：负侧残差与offset归一化；energy clip[-0.6,5]；独立8×B200。",逐字节复用A4.3冻结源码141个文件；source SHA256=b01e16ec2b83f3e6d60aebc2a7bf4f78f9ad6fc1b68ab636b57a4d34ee1e4f76；复用原训练器、配置与launcher，仅CLI参数和独立运行身份变化。,PickScore（原始分数；eval_reward/pickscore日志值×26）,"以A4.3为直接对照，唯一科学参数变化为b=clip(b_raw,-0.6,5)。r=x_rollout-x_old，Delta=x_current-x_old，A=max(MAE(x_current-x_rollout),1e-5)。
 b>=0时w=A；b<0时w=max(sqrt(A^2+4*MSE(Delta)),MSE(r)/(2.2*sigma_t))；policy loss=MSE(Delta-b*r)/stopgrad(w)。MAE/MSE对单样本latent维计算，整个分母停止梯度。
 sigma_t为上一完整梯度累积轮中、所有rank及所有符号样本、按实际scheduler timestep统计的RMS(r)全局中位数；本轮内冻结，无EMA或外部参考表；首轮或缺失t仅使用offset分支。
 保留A4.3的KL、采样、optimizer、梯度裁剪、old更新及EMA。独立fresh seed42，不续训。","UTP p-syd-mullet；单节点8×B200；80CPU/180Gi；high-priority。SD3.5-Medium，512×512，LoRA r32/alpha64；lr=3e-4，KL=1e-4，fp16，max_grad_norm=1，EMA=True。
@@ -461,10 +463,11 @@ Job UID：7027a3b5-9d79-4f79-8cbf-4357770015e4
 输出：/mnt/shared_storage/jobs/flowawr-a4-6-negnorm-b200-20261102/attempts/9202d1dd-037e-4f45-8e96-570db3c077af
 S3：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a4-6-b200-20261102/attempts/9202d1dd-037e-4f45-8e96-570db3c077af/
 提交清单：utp/a4-6-pickscore-negative-residual-norm-b200-mullet-s3.yaml","config/awr_negative_residual_norm.py:sd3_pickscore
-scripts/train_awr_sd3_negative_residual_norm.py",RUN_NAME=flowawr_sd3_pickscore_negative_residual_norm_a4_6 bash scripts/launchers/run_flowawr_sd3_pickscore_negative_residual_norm_8gpu.sh --config.train.energy_min=-0.6 --config.train.energy_max=5.0,flowawr_sd3_pickscore_negative_residual_norm_a4_6,"训练中；已确认有效optimizer更新至少2次；最后已核验step=1；观测时间=2026-11-02T08:44:25.772453+00:00
+scripts/train_awr_sd3_negative_residual_norm.py",RUN_NAME=flowawr_sd3_pickscore_negative_residual_norm_a4_6 bash scripts/launchers/run_flowawr_sd3_pickscore_negative_residual_norm_8gpu.sh --config.train.energy_min=-0.6 --config.train.energy_max=5.0,flowawr_sd3_pickscore_negative_residual_norm_a4_6,"[停止归档]按用户要求停止，8×B200资源已释放。最后已记录训练step 1955，8rank共同确认从0起1956条更新记录；其中1956条梯度有限且未跳过，最后此类step为1955，0条存在非有限梯度、0条跳过optimizer step；Eval至1950，196点，最终原始PickScore 23.92703772。40份raw JSONL共13,726,405,280字节已完整归档S3，本地保存可fetch索引；TensorBoard 1,006,898条/100tags已拉到本地并逐值核验。energy [-0.6,5]；负侧残差与offset分母归一化（offset=2、residual_threshold=2.2、epsilon=1e-5）；禁止自动恢复。证据：utp/receipts/a4-6-stop-20261104/final-records.json。[/停止归档]
+训练中；已确认有效optimizer更新至少2次；最后已核验step=1；观测时间=2026-11-02T08:44:25.772453+00:00
 证据：utp/receipts/a4-6-20261102/startup/latest-training-probe.json
 仅登记/同步状态，未添加或刷新评估及逐样本诊断数据。"
-A4.7,训练中,以A4.4为对照，检查仅限制负energy样本的未加权残差RMS至0.6、正侧残差不裁剪，能否缓解异常负样本引起的回撤并保持奖励提升。,"A4.4对照：负侧未加权残差RMS裁剪0.6，正侧残差不裁；energy clip[-0.5,5]；独立8×B200。",保留A4.4冻结源码144个文件逐字节不变，新增独立配置、训练器和launcher共3个文件；冻结源码147个文件；source SHA256=e5b1cc5c269b089b6847706126a211a35ac0bafcf6e6405cb1ce4ea7fc354d9b。,PickScore（原始分数；eval_reward/pickscore日志值×26）,"以A4.4为直接对照，energy仍为b=clip(b_raw,-0.5,5)。r=x_rollout-pred_x0_old，是未乘energy、未除t的x0空间残差。
+A4.7,已停止,检验仅对负侧残差施加0.6的RMS上限，能否保留正侧学习并改善稳定性。,,"A4.4对照：负侧未加权残差RMS裁剪0.6，正侧残差不裁；energy clip[-0.5,5]；独立8×B200。",保留A4.4冻结源码144个文件逐字节不变，新增独立配置、训练器和launcher共3个文件；冻结源码147个文件；source SHA256=e5b1cc5c269b089b6847706126a211a35ac0bafcf6e6405cb1ce4ea7fc354d9b。,PickScore（原始分数；eval_reward/pickscore日志值×26）,"以A4.4为直接对照，energy仍为b=clip(b_raw,-0.5,5)。r=x_rollout-pred_x0_old，是未乘energy、未除t的x0空间残差。
 每个样本、每个实际训练时间点，在latent维计算RMS(r)。b<0时s=min(1,0.6/RMS(r))，零残差s=1；b>=0时s=1。r_used=s*r，target=pred_x0_old+b*r_used。因此仅负侧未加权残差RMS上限为0.6，正侧残差不裁剪。
 保留A4.4原weight factor：stopgrad(max(mean_latent(abs(x_current-x_rollout)),1e-5))。不采用A4.3的负侧分母归一化，也不采用A4.5的energy乘残差correction RMS裁剪。
 其余KL、采样、optimizer、梯度裁剪、old更新及EMA沿用A4.4。独立fresh seed42，不续训。","UTP p-syd-mullet；单节点8×B200；80CPU/180Gi；high-priority。SD3.5-Medium，512×512，LoRA r32/alpha64；lr=3e-4，KL=1e-4，fp16，max_grad_norm=1，EMA=True。
@@ -477,18 +480,35 @@ Job UID：ae3ed6e8-371f-4284-81a7-33e7157a74f5
 输出：/mnt/shared_storage/jobs/flowawr-a4-7-negclip-b200-20261102/attempts/eadcfca8-a4e0-43b8-be95-d00787a6cc3f
 S3：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a4-7-b200-20261102/attempts/eadcfca8-a4e0-43b8-be95-d00787a6cc3f/
 提交清单：utp/a4-7-pickscore-negative-residual-clip-b200-mullet-s3.yaml","config/awr_negative_residual_clip.py:sd3_pickscore
-scripts/train_awr_sd3_negative_residual_clip.py",RUN_NAME=flowawr_sd3_pickscore_negative_residual_clip bash scripts/launchers/run_flowawr_sd3_pickscore_negative_residual_clip_8gpu.sh,flowawr_sd3_pickscore_negative_residual_clip,"训练中；已确认有效optimizer更新至少2次；最后已核验step=1；观测时间=2026-11-02T10:13:50.230697+00:00
+scripts/train_awr_sd3_negative_residual_clip.py",RUN_NAME=flowawr_sd3_pickscore_negative_residual_clip bash scripts/launchers/run_flowawr_sd3_pickscore_negative_residual_clip_8gpu.sh,flowawr_sd3_pickscore_negative_residual_clip,"[停止归档]按用户要求停止，8×B200资源已释放。最后已记录训练step 1159，8rank共同确认从0起1160条更新记录；其中1160条梯度有限且未跳过，最后此类step为1159，0条存在非有限梯度、0条跳过optimizer step；Eval至1150，116点，最终PickScore 23.96663618。40份raw JSONL共13,728,321,762字节已完整归档S3，本地保存可fetch索引；TensorBoard 597,053条/98tags已拉到本地并逐值核验。energy [-0.5,5]；负侧未加权residual RMS≤0.6，正侧不裁；禁止自动恢复。证据：utp/receipts/a4-7-stop-20261103/final-records.json。[/停止归档]
+训练中；已确认有效optimizer更新至少2次；最后已核验step=1；观测时间=2026-11-02T10:13:50.230697+00:00
 证据：utp/receipts/a4-7-20261102/startup/latest-training-probe.json
 仅登记/同步状态，未添加或刷新评估及逐样本诊断数据。"
-A4.8,已取消,按实际t限制异常未加权correction，保留正常高t记录；对照两档固定经验阈值。,"A4.4对照；energy[-0.5,5]；逐样本/实际t RMS cap；正负分侧验证后使用相同表；独立8×B200；tight",保留A4.4冻结144源成员逐字节不变；追加4个独立文件；source SHA256=dbf7de9448354e597f9cda7bb1466000dfaea61de893d90d963778141c161a3d,PickScore（原始分数；eval_reward/pickscore×26）,"r=x0-old；s=min(1,tau_sign(t)/RMS(r))；target=old+energy_used*s*r。逐向量径向norm clipping，不是逐元素，也不是energy*r或r/t的裁剪。原MAE stopgrad分母、KL、energy计算、optimizer及EMA不变。新增oldnorm、tau和effective energy日志。","energy[-0.5,5]；RMS tau=[0.015, 0.3, 0.49, 0.65, 0.73, 0.78, 0.84, 0.9, 1.0, 1.04]；实际t=[0.008928571827709675, 0.2780488133430481, 0.46487605571746826, 0.6021506190299988, 0.7072785496711731, 0.7903683185577393, 0.8576923608779907, 0.9133490324020386, 0.9601293802261353, 1.0]；正负相同，零energy按正侧表；seed42，fresh，lr3e-4，KL1e-4，fp16；1152图/更新，每图9/10实际t；num_epochs100000，无1000步停止；eval/save每10步；8B200/80CPU/180Gi。
-config/awr_timestep_residual_clip.py:sd3_pickscore_tclip_tight
-flowawr-a4-8-tclip-b200-20261102","scripts/train_awr_sd3_timestep_residual_clip.py
-flow_grpo/timestep_residual_clipping.py",TCLIP_PROFILE=tight bash scripts/launchers/run_flowawr_sd3_pickscore_timestep_residual_clip_8gpu.sh,flowawr_sd3_pickscore_tclip_tight,用户要求先讨论方案，提交已撤销；未开训，optimizer 更新数为0。禁止自动恢复或重新提交，后续提交须有明确用户批准。源代码、阈值分析和实验包保留。撤销核验：utp/receipts/tclip-pair-20261102/CANCELLATION_VERIFICATION.json
-A4.9,已取消,按实际t限制异常未加权correction，保留正常高t记录；对照两档固定经验阈值。,"A4.4对照；energy[-0.5,5]；逐样本/实际t RMS cap；正负分侧验证后使用相同表；独立8×B200；loose",保留A4.4冻结144源成员逐字节不变；追加4个独立文件；source SHA256=dbf7de9448354e597f9cda7bb1466000dfaea61de893d90d963778141c161a3d,PickScore（原始分数；eval_reward/pickscore×26）,"r=x0-old；s=min(1,tau_sign(t)/RMS(r))；target=old+energy_used*s*r。逐向量径向norm clipping，不是逐元素，也不是energy*r或r/t的裁剪。原MAE stopgrad分母、KL、energy计算、optimizer及EMA不变。新增oldnorm、tau和effective energy日志。","energy[-0.5,5]；RMS tau=[0.015, 0.32, 0.5, 0.65, 0.75, 0.85, 0.92, 1.0, 1.1, 1.2]；实际t=[0.008928571827709675, 0.2780488133430481, 0.46487605571746826, 0.6021506190299988, 0.7072785496711731, 0.7903683185577393, 0.8576923608779907, 0.9133490324020386, 0.9601293802261353, 1.0]；正负相同，零energy按正侧表；seed42，fresh，lr3e-4，KL1e-4，fp16；1152图/更新，每图9/10实际t；num_epochs100000，无1000步停止；eval/save每10步；8B200/80CPU/180Gi。
-config/awr_timestep_residual_clip.py:sd3_pickscore_tclip_loose
-flowawr-a4-9-tclip-b200-20261102","scripts/train_awr_sd3_timestep_residual_clip.py
-flow_grpo/timestep_residual_clipping.py",TCLIP_PROFILE=loose bash scripts/launchers/run_flowawr_sd3_pickscore_timestep_residual_clip_8gpu.sh,flowawr_sd3_pickscore_tclip_loose,用户要求先讨论方案，提交已撤销；未开训，optimizer 更新数为0。禁止自动恢复或重新提交，后续提交须有明确用户批准。源代码、阈值分析和实验包保留。撤销核验：utp/receipts/tclip-pair-20261102/CANCELLATION_VERIFICATION.json
-A4.10,排队中,以A4.4为对照，检查仅限制负energy样本的未加权残差RMS至0.75、正侧残差不裁剪，能否缓解异常负样本引起的回撤并保持奖励提升。,"A4.4对照：负侧未加权残差RMS裁剪0.75，正侧残差不裁；energy clip[-0.5,5]；独立8×B200。",逐字节复用A4.7已验证的147个源码文件，其中包含A4.4原始144文件；启动参数指定阈值0.75，独立运行身份；source SHA256=e5b1cc5c269b089b6847706126a211a35ac0bafcf6e6405cb1ce4ea7fc354d9b。,PickScore（原始分数；eval_reward/pickscore日志值×26）,"以A4.4为直接对照，energy仍为b=clip(b_raw,-0.5,5)。r=x_rollout-pred_x0_old，是未乘energy、未除t的x0空间残差。
+A4.8,训练中,检验按实际扩散时间设1.1t残差上限，能否比固定阈值更好地区分异常。,,"A4.4对照：正负侧均按实际t裁剪未加权correction RMS≤1.1*t；energy clip[-0.5,5]；独立8×B200。旧table方案已取消，本次为用户重新明确授权的新任务。",A4.4冻结144个源码文件逐字节保留，新增独立config/trainer/launcher共147文件；config沿用awr.py结构，裁剪及raw日志在新trainer内；source SHA256=876bbd6c875a47ef7cb128ef113e5d81ee7c299e2ef0a6c0c5a7bc242da2a68a。,PickScore（原始分数；eval_reward/pickscore日志值×26）,"以A4.4为直接对照，energy仍为b=clip(b_raw,-0.5,5)。r=x_rollout-pred_x0_old，是未乘energy、未除t的x0空间残差。
+每个样本、每个实际扩散时间点t=timesteps/1000，在latent维计算RMS(r)，tau(t)=1.1*t。正负侧共用s=min(1,tau(t)/RMS(r))；零残差s=1，t=0时非零残差s=0。r_used=s*r，target=pred_x0_old+b*r_used。不是逐元素裁剪，不是训练step分箱，不使用阈值表或额外floor。
+保留A4.4原weight factor：stopgrad(max(mean_latent(abs(x_current-x_rollout)),1e-5))。不采用A4.3的负侧分母归一化，也不采用A4.5的energy乘残差correction RMS裁剪。
+其余KL、采样、optimizer、梯度裁剪、old更新及EMA沿用A4.4。独立fresh seed42，不续训。","UTP p-syd-mullet；单节点8×B200；80CPU/180Gi；实际调度优先级low（10，2026-11-05在线降级；JobSet类别及Workload类别均为low-priority）。SD3.5-Medium，512×512，LoRA r32/alpha64；lr=3e-4，KL=1e-4，fp16，max_grad_norm=1，EMA=True。
+energy_min=-0.5；energy_max=5；residual_clip_enabled=True；residual_clip_k=1.1；rule=linear_actual_t；正负同阈值。
+每卡batch9；rollout batches16；gradient_accumulation_steps16；每组24图；1152图/更新；每图9个训练时间点。训练/评估采样步数10/40；guidance_scale=1；DPM2；temperature=1；global_std=True；adv_clip_max=5；hard_gating=False。
+seed=42；resume_from为空；log_raw_data=True；num_epochs=100000；每10 epoch评估/保存；无自动step停止点。排除mi-0ec01b135f12af908及mi-064e1ae5a69e470f6；分配后核验8卡enforced/default功率限制，负载下复核。
+配置入口：config/awr_linear_timestep_residual_clip.py:sd3_pickscore
+任务：flowawr-a4-8-linear-kt-b200-20261102
+Job UID：ebe1ffa4-ed5a-4a31-8591-b8ec633953bc
+输出：等待Pod分配
+S3：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a4-8-linear-kt-b200-20261102
+提交清单：utp/a4-8-pickscore-linear-timestep-residual-clip-b200-mullet-s3.yaml","config/awr_linear_timestep_residual_clip.py:sd3_pickscore
+scripts/train_awr_sd3_linear_timestep_residual_clip.py",RUN_NAME=flowawr_sd3_pickscore_linear_tclip bash scripts/launchers/run_flowawr_sd3_pickscore_linear_timestep_residual_clip_8gpu.sh --config.train.residual_clip_k=1.1 --config.train.energy_min=-0.5 --config.train.energy_max=5.0,flowawr_sd3_pickscore_linear_tclip,"[最新结果同步]北京时间11-05 13:51:54固定快照：Eval step 2020，原始PickScore 24.05167866，共203点；来源UID=61b58fe5-0751-4d52-82c8-cfabfdbfae02。该来源的全部标量已导出本地TensorBoard并核验。证据：utp/receipts/all-utp-refresh-20261105-afternoon/publication/publication-validation.json。逐样本raw/诊断曲线未刷新。[/最新结果同步]
+[A4.8 运行状态]
+训练中；阶段=training；确认有效optimizer更新至少2次；最后已核验step=1。
+核验：2026-11-03T04:25:28.546392+00:00；证据：utp/receipts/a4-8-linear-kt-20261102/startup/latest-training-probe.json。
+READY已发布=True；未刷新评估或逐样本诊断曲线。
+[/A4.8 运行状态]
+
+排队中；已确认有效optimizer更新至少0次；最后已核验step=None；观测时间=2026-11-02T10:58:26.254074+00:00
+证据：utp/receipts/a4-8-linear-kt-20261102/latest-observation.json
+仅登记/同步状态，未添加或刷新评估及逐样本诊断数据。
+旧table A4.8已取消且禁止恢复；旧记录完整保存在superseded_submission_history引用的history文件。"
+A4.10,已停止,检验保留0.75残差阈值但仅裁剪负侧，能否改善双侧裁剪的奖励与稳定性。,,"A4.4对照：负侧未加权残差RMS裁剪0.75，正侧残差不裁；energy clip[-0.5,5]；独立8×B200。",逐字节复用A4.7已验证的147个源码文件，其中包含A4.4原始144文件；启动参数指定阈值0.75，独立运行身份；source SHA256=e5b1cc5c269b089b6847706126a211a35ac0bafcf6e6405cb1ce4ea7fc354d9b。,PickScore（原始分数；eval_reward/pickscore日志值×26）,"以A4.4为直接对照，energy仍为b=clip(b_raw,-0.5,5)。r=x_rollout-pred_x0_old，是未乘energy、未除t的x0空间残差。
 每个样本、每个实际训练时间点，在latent维计算RMS(r)。b<0时s=min(1,0.75/RMS(r))，零残差s=1；b>=0时s=1。r_used=s*r，target=pred_x0_old+b*r_used。因此仅负侧未加权残差RMS上限为0.75，正侧残差不裁剪。
 保留A4.4原weight factor：stopgrad(max(mean_latent(abs(x_current-x_rollout)),1e-5))。不采用A4.3的负侧分母归一化，也不采用A4.5的energy乘残差correction RMS裁剪。
 其余KL、采样、optimizer、梯度裁剪、old更新及EMA沿用A4.4。独立fresh seed42，不续训。","UTP p-syd-mullet；单节点8×B200；80CPU/180Gi；high-priority。SD3.5-Medium，512×512，LoRA r32/alpha64；lr=3e-4，KL=1e-4，fp16，max_grad_norm=1，EMA=True。
@@ -498,16 +518,17 @@ seed=42；resume_from为空；log_raw_data=True；num_epochs=100000；每10 epoc
 配置入口：config/awr_negative_residual_clip.py:sd3_pickscore
 任务：flowawr-a4-10-negclip-b200-20261102
 Job UID：ab9f8928-546b-4680-896a-3c39824e4773
-输出：等待Pod分配
-S3：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a4-10-b200-20261102
+输出：/mnt/shared_storage/jobs/flowawr-a4-10-negclip-b200-20261102/attempts/72e03873-480e-40c2-a7d8-e2913dc87f1c
+S3：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a4-10-b200-20261102/attempts/72e03873-480e-40c2-a7d8-e2913dc87f1c/
 提交清单：utp/a4-10-pickscore-negative-residual-clip-b200-mullet-s3.yaml","config/awr_negative_residual_clip.py:sd3_pickscore
-scripts/train_awr_sd3_negative_residual_clip.py",RUN_NAME=flowawr_sd3_pickscore_negative_residual_clip_a4_10 bash scripts/launchers/run_flowawr_sd3_pickscore_negative_residual_clip_8gpu.sh --config.train.residual_rms_max=0.75,flowawr_sd3_pickscore_negative_residual_clip_a4_10,"排队中；已确认有效optimizer更新至少0次；最后已核验step=None；观测时间=2026-11-02T09:42:50.565503+00:00
-证据：utp/receipts/a4-10-20261102/latest-observation.json
+scripts/train_awr_sd3_negative_residual_clip.py",RUN_NAME=flowawr_sd3_pickscore_negative_residual_clip_a4_10 bash scripts/launchers/run_flowawr_sd3_pickscore_negative_residual_clip_8gpu.sh --config.train.residual_rms_max=0.75,flowawr_sd3_pickscore_negative_residual_clip_a4_10,"[停止归档]按用户要求停止，8×B200资源已释放。最后已记录训练step 1129，8rank共同确认从0起1130条更新记录；其中1130条梯度有限且未跳过，最后此类step为1129，0条存在非有限梯度、0条跳过optimizer step；Eval至1130，114点，最终PickScore 23.97485125。40份raw JSONL共13,448,515,912字节已完整归档S3，本地保存可fetch索引；TensorBoard 580,788条/98tags已拉到本地并逐值核验。energy [-0.5,5]；负侧未加权residual RMS≤0.75，正侧不裁；禁止自动恢复。证据：utp/receipts/a4-10-stop-20261103/final-records.json。[/停止归档]
+训练中；已确认有效optimizer更新至少2次；最后已核验step=1；观测时间=2026-11-02T10:45:41.693426+00:00
+证据：utp/receipts/a4-10-20261102/startup/latest-training-probe.json
 仅登记/同步状态，未添加或刷新评估及逐样本诊断数据。"
-A4.3.1,排队中,按原A4.3全部科学设置，从step 0独立重跑，观察PickScore提升与训练稳定性。,"原A4.3从step 0独立重跑：负侧残差与offset归一化，energy clip[-0.5,5]，fresh seed42，8×B200。",逐字节复用A4.3冻结源码141个文件；source SHA256=b01e16ec2b83f3e6d60aebc2a7bf4f78f9ad6fc1b68ab636b57a4d34ee1e4f76；复用原训练器、配置与launcher，科学参数不变，仅运行身份与独立输出路径变化。,PickScore（原始分数；eval_reward/pickscore日志值×26）,"全部科学设置沿用原A4.3，b=clip(b_raw,-0.5,5)。r=x_rollout-x_old，Delta=x_current-x_old，A=max(MAE(x_current-x_rollout),1e-5)。
+A4.3.1,训练中,从头复跑A4.3，检验负侧分母保护的稳定性和奖励表现能否重现。,,"原A4.3从step 0独立重跑：负侧残差与offset归一化，energy clip[-0.5,5]，fresh seed42，8×B200。",逐字节复用A4.3冻结源码141个文件；source SHA256=b01e16ec2b83f3e6d60aebc2a7bf4f78f9ad6fc1b68ab636b57a4d34ee1e4f76；复用原训练器、配置与launcher，科学参数不变，仅运行身份与独立输出路径变化。,PickScore（原始分数；eval_reward/pickscore日志值×26）,"全部科学设置沿用原A4.3，b=clip(b_raw,-0.5,5)。r=x_rollout-x_old，Delta=x_current-x_old，A=max(MAE(x_current-x_rollout),1e-5)。
 b>=0时w=A；b<0时w=max(sqrt(A^2+4*MSE(Delta)),MSE(r)/(2.2*sigma_t))；policy loss=MSE(Delta-b*r)/stopgrad(w)。MAE/MSE对单样本latent维计算，整个分母停止梯度。
 sigma_t为上一完整梯度累积轮中、所有rank及所有符号样本、按实际scheduler timestep统计的RMS(r)全局中位数；本轮内冻结，无EMA或外部参考表；首轮或缺失t仅使用offset分支。
-保留A4.3的KL、采样、optimizer、梯度裁剪、old更新及EMA。独立fresh seed42，从step 0开始，resume_from为空，不加载旧checkpoint。原A4.3失败与取消续训记录保留。","UTP p-syd-mullet；单节点8×B200；80CPU/180Gi；high-priority。SD3.5-Medium，512×512，LoRA r32/alpha64；lr=3e-4，KL=1e-4，fp16，max_grad_norm=1，EMA=True。
+保留A4.3的KL、采样、optimizer、梯度裁剪、old更新及EMA。独立fresh seed42，从step 0开始，resume_from为空，不加载旧checkpoint。原A4.3失败与取消续训记录保留。","UTP p-syd-mullet；单节点8×B200；80CPU/180Gi；实际调度优先级low（10，2026-11-05在线降级；JobSet类别及Workload类别均为low-priority）。SD3.5-Medium，512×512，LoRA r32/alpha64；lr=3e-4，KL=1e-4，fp16，max_grad_norm=1，EMA=True。
 energy_min=-0.5；energy_max=5；offset_coefficient=2；residual_threshold=2.2；weight_factor_epsilon=1e-5。
 每卡batch9；rollout batches16；gradient_accumulation_steps16；每组24图；1152图/更新；每图9个训练时间点。训练/评估采样步数10/40；guidance_scale=1；DPM2；temperature=1；global_std=True；adv_clip_max=5；hard_gating=False。
 seed=42；resume_from为空；log_raw_data=True；num_epochs=100000；每10 epoch评估/保存；无自动step停止点。排除mi-0ec01b135f12af908及mi-064e1ae5a69e470f6；分配后核验8卡enforced/default功率限制，负载下复核。
@@ -517,6 +538,252 @@ Job UID：8f372576-0f1e-4927-8995-800cec6d0e3a
 输出：等待Pod分配
 S3：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a4-3-1-b200-20261102
 提交清单：utp/a4-3-1-pickscore-negative-residual-norm-b200-mullet-s3.yaml","config/awr_negative_residual_norm.py:sd3_pickscore
-scripts/train_awr_sd3_negative_residual_norm.py",RUN_NAME=flowawr_sd3_pickscore_negative_residual_norm_a4_3_1 bash scripts/launchers/run_flowawr_sd3_pickscore_negative_residual_norm_8gpu.sh --config.train.energy_min=-0.5 --config.train.energy_max=5.0,flowawr_sd3_pickscore_negative_residual_norm_a4_3_1,"排队中；已确认有效optimizer更新至少0次；最后已核验step=None；观测时间=2026-11-02T09:45:58.205054+00:00
+scripts/train_awr_sd3_negative_residual_norm.py",RUN_NAME=flowawr_sd3_pickscore_negative_residual_norm_a4_3_1 bash scripts/launchers/run_flowawr_sd3_pickscore_negative_residual_norm_8gpu.sh --config.train.energy_min=-0.5 --config.train.energy_max=5.0,flowawr_sd3_pickscore_negative_residual_norm_a4_3_1,"[最新结果同步]北京时间11-05 13:51:48固定快照：Eval step 2060，原始PickScore 23.66072130，共207点；来源UID=34812874-08e3-4404-9b50-ef20806f362a。该来源的全部标量已导出本地TensorBoard并核验。证据：utp/receipts/all-utp-refresh-20261105-afternoon/publication/publication-validation.json。逐样本raw/诊断曲线未刷新。[/最新结果同步]
+[A4.3.1 运行状态]
+训练中；阶段=training；确认有效optimizer更新至少4次；最后已核验step=3。
+核验：2026-11-03T03:51:27.742465+00:00；证据：utp/receipts/a4-3-1-20261102/startup/latest-training-probe.json。
+READY已发布=True；未刷新评估或逐样本诊断曲线。
+[/A4.3.1 运行状态]
+
+排队中；已确认有效optimizer更新至少0次；最后已核验step=None；观测时间=2026-11-02T10:27:34.492073+00:00
 证据：utp/receipts/a4-3-1-20261102/latest-observation.json
 仅登记/同步状态，未添加或刷新评估及逐样本诊断数据。"
+A4.11,已停止,检验系数与负侧残差双重裁剪，能否避免GenEval采用PickScore缩放后的失稳。,,"GenEval + PickScore归一化；energy clip[-0.5,5]；仅负侧未加权残差RMS上限0.75；独立8×B200。",冻结旧源码，新增GenEval配置和独立launcher，复用已验证的负侧残差裁剪训练器；超参位于新配置；source SHA256=3529c5bfecb4f3a4ec6d25d703333e0af3ca9a545cdb76ab88db144dc58583b8。,GenEval（原始eval_reward/geneval日志值，不乘26）,"以A1.6.1为GenEval直接对照，保留hard_gating=False，即b_raw=K*softmax(A_raw_clipped/T)-1；b=clip(b_raw,-0.5,5)。r=x_rollout-pred_x0_old，是未乘energy、未除t的x0空间残差。
+每个样本、每个实际训练时间点，在latent维计算RMS(r)。b<0时s=min(1,0.75/RMS(r))，零残差s=1；b>=0时s=1。r_used=s*r，target=pred_x0_old+b*r_used。因此仅负侧未加权残差RMS上限为0.75，正侧残差不裁剪。
+保留A4.4原weight factor：stopgrad(max(mean_latent(abs(x_current-x_rollout)),1e-5))。裁剪尺度参考A4.4，负侧选择规则与A4.10一致；阈值不用于energy乘残差。
+其余科学参数与A1.6.1实际配置一致；可与A4.10同裁剪规则的PickScore实验对照。独立fresh seed42，不续训。","UTP p-syd-mullet；单节点8×B200；80CPU/180Gi；high-priority。SD3.5-Medium，512×512，LoRA r32/alpha64；lr=3e-4，KL=1e-4，fp16，max_grad_norm=1，EMA=True。
+energy_min=-0.5；energy_max=5；residual_clip_enabled=True；residual_rms_max=0.75；negative-only helper固定，正侧残差不裁。
+每卡batch9；rollout batches16；gradient_accumulation_steps16；每组24图；1152图/更新；每图9个训练时间点。训练/评估采样步数10/40；guidance_scale=1；DPM2；temperature=1；global_std=True；adv_clip_max=5；hard_gating=False。
+seed=42；resume_from为空；log_raw_data=True；num_epochs=100000；每10 epoch评估/保存；无自动step停止点。排除mi-0ec01b135f12af908及mi-064e1ae5a69e470f6；分配后核验8卡enforced/default功率限制，负载下复核。
+配置入口：config/awr_geneval_negative_residual_clip.py:sd3_geneval
+任务：flowawr-a4-11-geneval-negclip-b200-20261102
+Job UID：1de09161-3939-471d-8e1a-22332c3d01e2
+输出：等待Pod分配
+S3：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a4-11-geneval-b200-20261102
+提交清单：utp/a4-11-geneval-negative-residual-clip-b200-mullet-s3.yaml","config/awr_geneval_negative_residual_clip.py:sd3_geneval
+scripts/train_awr_sd3_negative_residual_clip.py",RUN_NAME=flowawr_sd3_geneval_negative_residual_clip_a4_11 bash scripts/launchers/run_flowawr_sd3_geneval_negative_residual_clip_8gpu.sh,flowawr_sd3_geneval_negative_residual_clip_a4_11,"[停止归档]按用户要求停止，8×B200资源已释放。最后已记录训练step 702，8rank共同确认从0起703条更新记录；其中703条梯度有限且未跳过，最后此类step为702，0条存在非有限梯度、0条跳过optimizer step；Eval至700，71点，最终GenEval 0.15358001。40份raw JSONL共8,229,261,981字节已完整归档S3，本地保存可fetch索引；TensorBoard 468,982条/113tags已拉到本地并逐值核验。energy [-0.5,5]；负侧未加权residual RMS≤0.75，正侧不裁；禁止自动恢复。证据：utp/receipts/a4-11-stop-20261104/final-records.json。[/停止归档]
+[A4.11 运行状态]
+训练中；阶段=training；确认有效optimizer更新至少3次；最后已核验step=2。
+核验：2026-11-03T04:42:46.374300+00:00；证据：utp/receipts/a4-11-geneval-20261102/startup/latest-training-probe.json。
+READY已发布=True；未刷新评估或逐样本诊断曲线。
+[/A4.11 运行状态]
+
+排队中；已确认有效optimizer更新至少0次；最后已核验step=None；观测时间=2026-11-02T12:58:00.433001+00:00
+证据：utp/receipts/a4-11-geneval-20261102/latest-observation.json
+仅登记/同步状态，未添加或刷新评估及逐样本诊断数据。"
+A4.12,训练中,检验1.1t残差裁剪只作用于负侧时，保留正侧更新能否改善奖励与稳定性。,,"A4.8同设；energy clip[-0.5,5]；仅负侧未加权残差RMS≤1.1×actual_t，正侧及零侧不裁剪；独立8×B200。",A4.8冻结147个原源码成员逐字节保留，仅新增独立config/trainer/launcher，共150文件；超参位于新配置；source SHA256=0fc5c8dcb6169001a76ffe65ee6fabcd9c57a91bde6c47dd06b02d34058e970f。,PickScore（原始分数；eval_reward/pickscore日志值×26）,"以A4.8为直接对照，唯一科学变化为残差裁剪仅用于b<0。b=clip(b_raw,-0.5,5)。r=x_rollout-pred_x0_old，是未乘energy、未除t的x0空间残差。
+每个样本、每个实际扩散t=timesteps/1000，在latent维计算RMS(r)，tau(t)=1.1*t。b<0时s=min(1,tau(t)/RMS(r))，零残差s=1；b>=0时s=1。r_used=s*r，target=pred_x0_old+b*r_used。正侧及零侧残差不裁剪；t=0仅负侧非零残差变为零。
+保留A4.8原weight factor：stopgrad(max(mean_latent(abs(x_current-x_rollout)),1e-5))。这是逐样本径向RMS裁剪，阈值不施加在energy乘残差后的correction。
+其余KL、采样、optimizer、梯度裁剪、old更新及EMA沿用A4.8；独立fresh seed42，不续训。","UTP p-syd-mullet；单节点8×B200；80CPU/180Gi；实际调度优先级low（10，2026-11-05在线降级；JobSet类别及Workload类别均为low-priority）。SD3.5-Medium，512×512，LoRA r32/alpha64；lr=3e-4，KL=1e-4，fp16，max_grad_norm=1，EMA=True。
+energy_min=-0.5；energy_max=5；residual_clip_enabled=True；residual_clip_k=1.1；residual_clip_negative_only=True；tau=1.1*actual_t，仅b<0裁剪。
+每卡batch9；rollout batches16；gradient_accumulation_steps16；每组24图；1152图/更新；每图9个训练时间点。训练/评估采样步数10/40；guidance_scale=1；DPM2；temperature=1；global_std=True；adv_clip_max=5；hard_gating=False。
+seed=42；resume_from为空；log_raw_data=True；num_epochs=100000；每10 epoch评估、每30 epoch保存；无自动step停止点。排除mi-0ec01b135f12af908及mi-064e1ae5a69e470f6；分配后核验8卡enforced/default功率限制，负载下复核。
+配置入口：config/awr_negative_linear_timestep_residual_clip.py:sd3_pickscore
+任务：flowawr-a4-12-neg-kt-b200-20261103
+Job UID：4237e51a-0139-44da-9ffe-8a58604825ff
+输出：/mnt/shared_storage/jobs/flowawr-a4-12-neg-kt-b200-20261103/attempts/4963b1e3-3f09-4fce-9e8a-6986e94355f4
+S3：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a4-12-negative-linear-kt-b200-20261103/attempts/4963b1e3-3f09-4fce-9e8a-6986e94355f4/
+提交清单：utp/a4-12-pickscore-negative-linear-timestep-residual-clip-b200-mullet-s3.yaml","config/awr_negative_linear_timestep_residual_clip.py:sd3_pickscore
+scripts/train_awr_sd3_negative_linear_timestep_residual_clip.py",RUN_NAME=flowawr_sd3_pickscore_negative_linear_tclip bash scripts/launchers/run_flowawr_sd3_pickscore_negative_linear_timestep_residual_clip_8gpu.sh,flowawr_sd3_pickscore_negative_linear_tclip,"[最新结果同步]北京时间11-05 13:51:08固定快照：Eval step 2010，原始PickScore 23.70599949，共202点；来源UID=4963b1e3-3f09-4fce-9e8a-6986e94355f4。该来源的全部标量已导出本地TensorBoard并核验。证据：utp/receipts/all-utp-refresh-20261105-afternoon/publication/publication-validation.json。逐样本raw/诊断曲线未刷新。[/最新结果同步]
+训练中；已确认有效optimizer更新至少2次；最后已核验step=1；观测时间=2026-11-03T04:43:21.408409+00:00
+证据：utp/receipts/a4-12-negative-linear-kt-20261103/startup/latest-training-probe.json
+仅登记/同步状态，未添加或刷新评估及逐样本诊断数据。"
+A4.13,训练中,在energy限幅后仅裁负侧含energy修正至RMS≤1，检验保留正侧能否改善稳定性。,,"参考A4.5；先energy clip[-0.5,5]，再仅负侧energy×残差的correction RMS≤1.0；正侧不裁correction；独立8×B200。",A4.5冻结144个原源码成员逐字节保留，仅新增独立config/trainer/launcher，共147文件；超参位于新配置；source SHA256=7bf315f7ea2722a06d6c317692fdd26c6089868f9c3a6a81d65a6f98778f3ea6。,PickScore（原始分数；eval_reward/pickscore日志值×26）,"参考A4.5，先b=clip(b_raw,-0.5,5)，再构造r=x_rollout-pred_x0_old与q=b*r。r是未加权x0空间残差，q是含energy的实际目标修正；本实验阈值只约束q。
+每个样本、每个训练时间点在latent维计算RMS(q)；b<0时s=min(1,1.0/RMS(q))，零修正s=1；b>=0时s=1。target=pred_x0_old+s*b*r；正侧仍受energy上界5约束，但不裁correction，零侧无修正。
+这是沿整向量等比例缩放、保留方向的RMS裁剪，不是逐元素裁剪，不除以t，不直接裁未加权残差。相对A4.5同时增加energy限幅并取消正侧correction裁剪，不能将后续差异仅归因某一项。
+weights记录energy clip后的b，training_terms.energy_used记录有效系数b*s。保留原weight factor：stopgrad(max(mean_latent(abs(x_current-x_rollout)),1e-5))；其余KL、采样、optimizer、梯度裁剪、old及EMA沿用A4.5；fresh seed42，不续训。","UTP p-syd-mullet；单节点8×B200；80CPU/180Gi；实际调度优先级low（10，2026-11-05在线降级；JobSet类别及Workload类别均为low-priority）。SD3.5-Medium，512×512，LoRA r32/alpha64；lr=3e-4，KL=1e-4，fp16，max_grad_norm=1，EMA=True。
+energy_min=-0.5；energy_max=5；correction_clip_enabled=True；correction_rms_max=1.0；correction_clip_negative_only=True；仅b<0的RMS(b*r)裁到1。
+每卡batch9；rollout batches16；gradient_accumulation_steps16；每组24图；1152图/更新；每图9个训练时间点。训练/评估采样步数10/40；guidance_scale=1；DPM2；temperature=1；global_std=True；adv_clip_max=5；hard_gating=False。
+seed=42；resume_from为空；log_raw_data=True；num_epochs=100000；实际每10 epoch评估/保存（trainer令save_freq=eval_freq，配置原值另存）；无自动step停止点。排除mi-0ec01b135f12af908及mi-064e1ae5a69e470f6；分配后核验8卡enforced/default功率限制，负载下复核。
+配置入口：config/awr_negative_correction_clip.py:sd3_pickscore
+任务：flowawr-a4-13-negcorr-b200-20261103
+Job UID：6d439f40-d597-4238-ad97-b2a133ac9263
+输出：/mnt/shared_storage/jobs/flowawr-a4-13-negcorr-b200-20261103/attempts/daea6e0b-3e14-420e-a4e3-06f7a9401883
+S3：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a4-13-negative-correction-b200-20261103/attempts/daea6e0b-3e14-420e-a4e3-06f7a9401883/
+提交清单：utp/a4-13-pickscore-negative-correction-clip-b200-mullet-s3.yaml","config/awr_negative_correction_clip.py:sd3_pickscore
+scripts/train_awr_sd3_negative_correction_clip.py",RUN_NAME=flowawr_sd3_pickscore_negative_correction_clip_a4_13 bash scripts/launchers/run_flowawr_sd3_pickscore_negative_correction_clip_8gpu.sh,flowawr_sd3_pickscore_negative_correction_clip_a4_13,"[最新结果同步]北京时间11-05 13:51:09固定快照：Eval step 1930，原始PickScore 23.90086293，共194点；来源UID=daea6e0b-3e14-420e-a4e3-06f7a9401883。该来源的全部标量已导出本地TensorBoard并核验。证据：utp/receipts/all-utp-refresh-20261105-afternoon/publication/publication-validation.json。逐样本raw/诊断曲线未刷新。[/最新结果同步]
+训练中；已确认有效optimizer更新至少2次；最后已核验step=1；观测时间=2026-11-03T06:44:44.760934+00:00
+证据：utp/receipts/a4-13-negative-correction-20261103/startup/latest-training-probe.json
+仅登记/同步状态，未添加或刷新评估及逐样本诊断数据。"
+A1.9,训练中,检验A1每张样本由随机10取9改为全10个时间步后，对PickScore提升及训练稳定性的影响。,,A1 baseline 全10个训练时间步；原随机10取9改为10全取；独立8×B200。,逐字节复用原A1冻结源码（与A1.1相同）；训练代码、配置文件及原launcher不改；source SHA256=98c0e87d0a55a56c9e7a92a1ace7ec8175a8bda4e3a7340d5b4c9df8ca793e01。,PickScore（原始分数；eval_reward/pickscore日志值×26）,"A1原始算法，energy=clip(Kp-1,-3,3)，无额外residual/correction clipping。唯一科学参数变化为CLI覆盖train.timestep_fraction=1.0（原0.99）；sample.num_steps保持10。每个sample仍独立随机打乱时间步顺序，但全部10个t均训练；每个t仍对clean latent重新加噪。num_train_timesteps=int(10×1.0)=10；有效梯度累积由16×9=144改为16×10=160，loss同步除以160；1152图/更新及每epoch一次optimizer更新保持不变，训练前后向工作量约增加10/9。fresh seed42，不续训。原A1为16卡，本次8B200，卡数/运行时差异单独记录；更直接硬件对照为同为8B200的A1.1。","UTP p-syd-mullet；单节点8×B200；80CPU/180Gi；high-priority。SD3.5-Medium，512×512，LoRA r32/alpha64；lr=3e-4；KL=1e-4；fp16；max_grad_norm=1；EMA=True。
+每组24图；每卡batch9；rollout batches16；gradient_accumulation_steps16；1152图/更新；inner_epochs=1；sample.num_steps=10；train.timestep_fraction=1.0；每图10个训练时间点；有效梯度累积160。
+训练/评估采样步数10/40；guidance_scale=1；deterministic DPM2；temperature=1；global_std=True；adv_clip_max=5；energy范围[-3,3]；hard_gating=False；filter_zero_advantage=False。
+seed=42；resume_from为空；log_raw_data=True；num_epochs=100000；实际每10 epoch评估/保存；无新增自动step停止点。B200运行时沿用A1.1的Python3.10.16 / torch2.7.1+cu128；排除两台已知200W节点，分配后核验8卡enforced/default功率并负载复核。
+配置入口：config/awr.py:sd3_pickscore
+任务：flowawr-a1-9-allt-b200-20261103
+Job UID：312a0d1c-9121-45e0-8006-bcdefce0659a
+输出：/mnt/shared_storage/jobs/flowawr-a1-9-allt-b200-20261103/attempts/d5fa16fc-7418-4d16-b110-4682d2285b35
+S3：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a1-9-allt-b200-20261103/attempts/d5fa16fc-7418-4d16-b110-4682d2285b35/
+提交清单：utp/a1-9-pickscore-all-timesteps-b200-mullet-s3.yaml","config/awr.py:sd3_pickscore
+scripts/train_awr_sd3.py",RUN_NAME=flowawr_sd3_pickscore_all_timesteps_a1_9 bash scripts/launchers/run_a1_flowawr_sd3_pickscore_8gpu.sh --config.train.timestep_fraction=1.0,flowawr_sd3_pickscore_all_timesteps_a1_9,"[最新结果同步]北京时间11-05 13:51:09固定快照：Eval step 1520，原始PickScore 23.90392208，共153点；来源UID=d5fa16fc-7418-4d16-b110-4682d2285b35。该来源的全部标量已导出本地TensorBoard并核验。证据：utp/receipts/all-utp-refresh-20261105-afternoon/publication/publication-validation.json。逐样本raw/诊断曲线未刷新。[/最新结果同步]
+训练中；已确认有效optimizer更新至少2次；最后已核验step=1；观测时间=2026-11-03T14:15:52.779629+00:00
+证据：utp/receipts/a1-9-all-timesteps-20261103/startup/latest-training-probe.json
+仅登记/同步状态，未添加或刷新评估及逐样本诊断数据。"
+A4.14,训练中,检验仅将分母的current预测换为old预测后，对PickScore奖励与训练稳定性的影响。,,PickScore官方基线仅将weight factor中的v_current换为v_old；独立8×B200。,保留冻结基线87个源码文件，新增独立config/trainer及两份launcher，共91文件；原文件不改；source SHA256=7d7538a07019582acaa0c875885cf5a32b9d5a6953cb887814978aee72b2ea9a。,PickScore（原始分数；eval_reward/pickscore日志值×26）,"相对官方对应奖励配置，唯一算法变化为weight_factor由stopgrad(max(mean_latent(abs(pred_x0_current-x_rollout)),1e-5))换为stopgrad(max(mean_latent(abs(pred_x0_old-x_rollout)),1e-5))。pred_x0_old=xt-t*v_old；target仍为pred_x0_old+b*(x_rollout-pred_x0_old)，loss分子仍使用current。逐样本、逐训练时间点在latent维取MAE；保留float64计算、下限1e-5和no_grad，不增加分母超参。分母对固定输入不随current更新，但仍随新噪声、t及old更新而变化。PickScore沿用hard_gating=False，b_raw=K*softmax(A_clipped/T)-1。两者均clip到[-3,3]；不添加residual/correction clipping。其余target、loss、KL、采样、optimizer、梯度裁剪、old及EMA沿用官方；保留本地逐样本日志。fresh seed42，不续训。","UTP p-syd-mullet；单节点8×B200；80CPU/180Gi；high-priority。SD3.5-Medium，512×512，LoRA r32/alpha64；lr=3e-4；KL=1e-4；fp16；max_grad_norm=1；EMA=True。
+每组24图；每卡batch9；rollout batches16；gradient_accumulation_steps16；1152图/更新；inner_epochs=1；sample.num_steps=10；train.timestep_fraction=0.99；每图9个训练时间点；有效梯度累积144。
+训练/评估采样步数10/40；guidance_scale=1；deterministic DPM2；temperature=1；global_std=True；adv_clip_max=5；energy范围[-3,3]；hard_gating=False；filter_zero_advantage=False。
+seed=42；resume_from为空；log_raw_data=True；num_epochs=100000；实际每10 epoch评估/保存；无新增自动step停止点。超参继承官方对应preset，新的config只区分运行名称和目录；原trainer/config/launcher不修改。排除两台已知200W节点，分配后核验8卡enforced/default功率并负载复核。
+配置入口：config/awr_old_weight.py:sd3_pickscore
+任务：flowawr-a4-14-oldw-b200-20261103
+Job UID：868d6cd1-feec-481a-a654-da950d1c9e82
+输出：/mnt/shared_storage/jobs/flowawr-a4-14-oldw-b200-20261103/attempts/1886730b-9a82-4ed3-a13a-2a530b143a8f
+S3：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a4-14-oldw-b200-20261103/attempts/1886730b-9a82-4ed3-a13a-2a530b143a8f/
+提交清单：utp/a4-14-pickscore-old-weight-b200-mullet-s3.yaml","config/awr_old_weight.py:sd3_pickscore
+scripts/train_awr_sd3_old_weight.py",RUN_NAME=flowawr_sd3_pickscore_old_weight_a4_14 bash scripts/launchers/run_flowawr_sd3_pickscore_old_weight_8gpu.sh,flowawr_sd3_pickscore_old_weight_a4_14,"[最新结果同步]北京时间11-05 13:51:09固定快照：Eval step 1600，原始PickScore 24.03378868，共161点；来源UID=1886730b-9a82-4ed3-a13a-2a530b143a8f。该来源的全部标量已导出本地TensorBoard并核验。证据：utp/receipts/all-utp-refresh-20261105-afternoon/publication/publication-validation.json。逐样本raw/诊断曲线未刷新。[/最新结果同步]
+训练中；已确认有效optimizer更新至少2次；最后已核验step=1；观测时间=2026-11-03T14:28:47.265210+00:00
+证据：utp/receipts/a4-14-old-weight-20261103/startup/latest-training-probe.json
+仅登记/同步状态，未添加或刷新评估及逐样本诊断数据。"
+A4.15,训练中,检验仅将分母的current预测换为old预测后，对GenEval奖励与训练稳定性的影响。,,GenEval官方基线仅将weight factor中的v_current换为v_old；独立8×B200。,保留冻结基线87个源码文件，新增独立config/trainer及两份launcher，共91文件；原文件不改；source SHA256=7d7538a07019582acaa0c875885cf5a32b9d5a6953cb887814978aee72b2ea9a。,GenEval（原始eval_reward/geneval日志值，不乘26）,"相对官方对应奖励配置，唯一算法变化为weight_factor由stopgrad(max(mean_latent(abs(pred_x0_current-x_rollout)),1e-5))换为stopgrad(max(mean_latent(abs(pred_x0_old-x_rollout)),1e-5))。pred_x0_old=xt-t*v_old；target仍为pred_x0_old+b*(x_rollout-pred_x0_old)，loss分子仍使用current。逐样本、逐训练时间点在latent维取MAE；保留float64计算、下限1e-5和no_grad，不增加分母超参。分母对固定输入不随current更新，但仍随新噪声、t及old更新而变化。GenEval沿用官方hard_gating=True，b_raw=(p-1/K)/max(std(p-1/K)+1e-4,1e-2)；不沿用A1.6.1/A4.11的hard_gating=False。两者均clip到[-3,3]；不添加residual/correction clipping。其余target、loss、KL、采样、optimizer、梯度裁剪、old及EMA沿用官方；保留本地逐样本日志。fresh seed42，不续训。","UTP p-syd-mullet；单节点8×B200；80CPU/180Gi；high-priority。SD3.5-Medium，512×512，LoRA r32/alpha64；lr=3e-4；KL=1e-4；fp16；max_grad_norm=1；EMA=True。
+每组24图；每卡batch9；rollout batches16；gradient_accumulation_steps16；1152图/更新；inner_epochs=1；sample.num_steps=10；train.timestep_fraction=0.99；每图9个训练时间点；有效梯度累积144。
+训练/评估采样步数10/40；guidance_scale=1；deterministic DPM2；temperature=1；global_std=True；adv_clip_max=5；energy范围[-3,3]；hard_gating=True；filter_zero_advantage=False。
+seed=42；resume_from为空；log_raw_data=True；num_epochs=100000；实际每10 epoch评估/保存；无新增自动step停止点。超参继承官方对应preset，新的config只区分运行名称和目录；原trainer/config/launcher不修改。排除两台已知200W节点，分配后核验8卡enforced/default功率并负载复核。
+配置入口：config/awr_old_weight.py:sd3_geneval
+任务：flowawr-a4-15-oldw-b200-20261103
+Job UID：c330f0b8-e139-442a-a448-863c064ebdbf
+输出：/mnt/shared_storage/jobs/flowawr-a4-15-oldw-b200-20261103/attempts/94ef2526-130d-4d80-8f74-21697f97d7b5
+S3：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a4-15-oldw-b200-20261103/attempts/94ef2526-130d-4d80-8f74-21697f97d7b5/
+提交清单：utp/a4-15-geneval-old-weight-b200-mullet-s3.yaml","config/awr_old_weight.py:sd3_geneval
+scripts/train_awr_sd3_old_weight.py",RUN_NAME=flowawr_sd3_geneval_old_weight_a4_15 bash scripts/launchers/run_flowawr_sd3_geneval_old_weight_8gpu.sh,flowawr_sd3_geneval_old_weight_a4_15,"[最新结果同步]北京时间11-05 13:51:08固定快照：Eval step 780，GenEval 0.94802958，共79点；来源UID=94ef2526-130d-4d80-8f74-21697f97d7b5。该来源的全部标量已导出本地TensorBoard并核验。证据：utp/receipts/all-utp-refresh-20261105-afternoon/publication/publication-validation.json。逐样本raw/诊断曲线未刷新。[/最新结果同步]
+训练中；已确认有效optimizer更新至少1次；最后已核验step=0；观测时间=2026-11-03T14:36:10.534471+00:00
+证据：utp/receipts/a4-15-old-weight-20261103/startup/latest-training-probe.json
+仅登记/同步状态，未添加或刷新评估及逐样本诊断数据。"
+A4.18,已停止,"评估b[-0.5,5]结合完整24样本同t z>2.5 correction norm径向裁剪，对PickScore奖励和训练稳定性的影响。",,tmp.tex §4.2：importance coefficient b clipping + 同组同t correction norm标准化裁剪；全10训练时间步；独立8×B200。,官方Fuzm7/FlowAWR commit 5ae282ef34fd664d9828fe62817f1960534f1cce复制为独立trainer/config/stat tracker；复用原有逐样本日志；原87文件逐字节不变；source SHA256=0d60bc634b6b4df00d08b4e79de66b7088b982d37cf8b004767298519634a409,PickScore（原始分数；eval_reward/pickscore日志值×26）,"A_i=(r_i-mean_group(r))/(std_rollout(r)+1e-4)，先clip(A_i,-5,5)，再除T=1。w_i=24*softmax(A_clipped/T)，b_i=clip(w_i-1,-0.5,5)。组是sampler实际24样本group ID，相同prompt的不同rollout组不混合。对同一实际t，c_i,t=x_rollout-(x_t-t*v_old)，使用未乘b的x0 correction L2 norm。组内24样本正负侧合并，mu=mean(norm)，s=sample_std(norm,ddof=1)，z=(norm-mu)/s。仅z>2.5时scale=(mu+2.5*s)/norm，否则scale=1；c_clip=scale*c。target=stopgrad(x_old+b*c_clip)。weight_factor=stopgrad(max(mean_latent(abs(x_current-x_rollout)),1e-5))；policy_loss=mean_latent((x_current-target)^2/weight_factor)，另加1e-4*mean_latent((v_current-v_ref)^2)。冻结old预测前移到每个inner epoch的预计算，并缓存实际fresh noise和old输出，训练复用；跨8rank汇聚标量，完整24×同t统计后映射回训练顺序；未增加old前向总数。每样本独立打乱t顺序但全10t都训练。原training_terms字段residual_l2兼容保存裁剪前x0 correction norm；weights.energy_used保存b，training_terms.energy_used保存实际b*scale，可还原真实target。每条记录通过sample_id连接，weights.group_id包含实际group ID的哈希。fresh seed42，不续训。","UTP p-syd-mullet / b-core-cn-prod；1节点8×B200，80CPU/180Gi，high。SD3.5-Medium，512，LoRA r32/alpha64，fp16，lr3e-4，max_grad_norm1，EMA=True。
+K24；每卡batch9；rollout batches16；1152图/更新；inner epoch1；sample.num_steps10；timestep_fraction1.0；num_train_timesteps10；基础累积16×10=160；eval采样40。
+global_std=True；adv_clip_max5；temperature1；energy_min=-0.5，energy_max=5；correction_norm_z_threshold2.5；sample SD ddof1；hard_gating=False；adaptive_weight_floor1e-5；reference beta1e-4。
+seed42；resume空；num_epochs100000；每10epoch eval/save；log_raw_data=True；无新增自动停止点。排除已知200W节点，8卡启动前与负载下复核enforced/default功率。
+任务：flowawr-a4-18-groupcorr-b200-20261104
+Job UID：172bcc12-e835-45ab-b0fd-f07b14abfc7c
+输出：/mnt/shared_storage/jobs/flowawr-a4-18-groupcorr-b200-20261104/attempts/3ed987b6-97c8-40b6-ab52-63ed8936116a
+S3：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a4-18-groupcorr-b200-20261104/attempts/3ed987b6-97c8-40b6-ab52-63ed8936116a/","config/awr_group_correction_clip.py:sd3_pickscore
+scripts/train_awr_sd3_group_correction_clip.py
+flow_grpo/stat_tracking_group_correction_clip.py",RUN_NAME=flowawr_sd3_pickscore_group_correction_clip_a4_18 bash scripts/launchers/run_flowawr_sd3_pickscore_group_correction_clip_8gpu.sh,flowawr_sd3_pickscore_group_correction_clip_a4_18,"[停止归档]按用户要求停止，8×B200资源已释放。最后已记录训练step 195，8rank共同确认从0起196条更新记录；其中196条梯度有限且未跳过，最后此类step为195，0条存在非有限梯度、0条跳过optimizer step；Eval至190，20点，最终原始PickScore 23.44235325。40份raw JSONL共1,516,611,269字节已完整归档S3，本地保存可fetch索引；TensorBoard 107,428条/98tags已拉到本地并逐值核验。b clipping [-0.5,5]；同一个24张rollout组、同一实际t，以正负两侧样本共同计算均值及样本标准差（ddof=1），仅对负侧z>2.5的correction norm做clip，全10t训练；实际存在的metadata（config.json）已逐字节核对并归档；冻结源目录未生成可选说明文件correction_clipping.json，未补造或声称已归档该文件。本组按用户要求暂从结果网页隐藏，全部曲线记录和本地TensorBoard保留；禁止自动恢复或重提。证据：utp/receipts/a4-18-stop-20261104/final-records.json。[/停止归档]
+训练中；已确认有效optimizer更新至少2次；观测时间=2026-11-04T08:51:15.090855+00:00
+证据：utp/receipts/a4-18-group-correction-20261104/startup/latest-training-probe.json
+科学曲线未采集前不填结论。"
+A4.19,已停止,与A4.18(z=2.5)比较，在其余配置完全相同下，将correction norm裁剪阈值放宽至z=3对PickScore奖励及训练稳定性的影响。,,A4.18的z=3对照；唯一算法变化为阈值2.5→3；tmp.tex §4.2：importance coefficient b clipping + 同组同t correction norm标准化裁剪；全10训练时间步；独立8×B200。,逐字节复用A4.18已验证91文件源码归档，trainer/config/stat tracker/launcher不修改；仅CLI覆盖train.correction_norm_z_threshold=3.0；source SHA256=0d60bc634b6b4df00d08b4e79de66b7088b982d37cf8b004767298519634a409,PickScore（原始分数；eval_reward/pickscore日志值×26）,"A_i=(r_i-mean_group(r))/(std_rollout(r)+1e-4)，先clip(A_i,-5,5)，再除T=1。w_i=24*softmax(A_clipped/T)，b_i=clip(w_i-1,-0.5,5)。组是sampler实际24样本group ID，相同prompt的不同rollout组不混合。对同一实际t，c_i,t=x_rollout-(x_t-t*v_old)，使用未乘b的x0 correction L2 norm。组内24样本正负侧合并，mu=mean(norm)，s=sample_std(norm,ddof=1)，z=(norm-mu)/s。仅z>3.0时scale=(mu+3.0*s)/norm，否则scale=1；c_clip=scale*c。target=stopgrad(x_old+b*c_clip)。weight_factor=stopgrad(max(mean_latent(abs(x_current-x_rollout)),1e-5))；policy_loss=mean_latent((x_current-target)^2/weight_factor)，另加1e-4*mean_latent((v_current-v_ref)^2)。冻结old预测前移到每个inner epoch的预计算，并缓存实际fresh noise和old输出，训练复用；跨8rank汇聚标量，完整24×同t统计后映射回训练顺序；未增加old前向总数。每样本独立打乱t顺序但全10t都训练。原training_terms字段residual_l2兼容保存裁剪前x0 correction norm；weights.energy_used保存b，training_terms.energy_used保存实际b*scale，可还原真实target。每条记录通过sample_id连接，weights.group_id包含实际group ID的哈希。fresh seed42，不续训。","UTP p-syd-mullet / b-core-cn-prod；1节点8×B200，80CPU/180Gi，high。SD3.5-Medium，512，LoRA r32/alpha64，fp16，lr3e-4，max_grad_norm1，EMA=True。
+K24；每卡batch9；rollout batches16；1152图/更新；inner epoch1；sample.num_steps10；timestep_fraction1.0；num_train_timesteps10；基础累积16×10=160；eval采样40。
+global_std=True；adv_clip_max5；temperature1；energy_min=-0.5，energy_max=5；correction_norm_z_threshold3.0；sample SD ddof1；hard_gating=False；adaptive_weight_floor1e-5；reference beta1e-4。
+seed42；resume空；num_epochs100000；每10epoch eval/save；log_raw_data=True；无新增自动停止点。排除已知200W节点，8卡启动前与负载下复核enforced/default功率。
+任务：flowawr-a4-19-groupcorr-z3-b200-20261104
+Job UID：b7a8579f-a380-4102-bd4f-8b12674b1c5b
+输出：/mnt/shared_storage/jobs/flowawr-a4-19-groupcorr-z3-b200-20261104/attempts/68ae2630-f0b3-4d36-ad2b-5abbcefc386f
+S3：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a4-19-groupcorr-z3-b200-20261104/attempts/68ae2630-f0b3-4d36-ad2b-5abbcefc386f/","config/awr_group_correction_clip.py:sd3_pickscore
+scripts/train_awr_sd3_group_correction_clip.py
+flow_grpo/stat_tracking_group_correction_clip.py",RUN_NAME=flowawr_sd3_pickscore_group_correction_clip_z3_a4_19 bash scripts/launchers/run_flowawr_sd3_pickscore_group_correction_clip_8gpu.sh --config.train.correction_norm_z_threshold=3.0,flowawr_sd3_pickscore_group_correction_clip_z3_a4_19,"[停止归档]按用户要求停止，8×B200资源已释放。最后已记录训练step 175，8rank共同确认从0起176条更新记录；其中176条梯度有限且未跳过，最后此类step为175，0条存在非有限梯度、0条跳过optimizer step；Eval至170，18点，最终原始PickScore 23.43567085。40份raw JSONL共1,369,715,495字节已完整归档S3，本地保存可fetch索引；TensorBoard 96,216条/98tags已拉到本地并逐值核验。b clipping [-0.5,5]；同一个24张rollout组、同一实际t，以正负两侧样本共同计算均值及样本标准差（ddof=1），仅对负侧z>3的correction norm做clip，全10t训练；实际存在的metadata（config.json）已逐字节核对并归档；冻结源目录未生成可选说明文件correction_clipping.json，未补造或声称已归档该文件。本组按用户要求暂从结果网页隐藏，全部曲线记录和本地TensorBoard保留；禁止自动恢复或重提。证据：utp/receipts/a4-19-stop-20261104/final-records.json。[/停止归档]
+训练中；已确认有效optimizer更新至少2次；观测时间=2026-11-04T09:23:45.672650+00:00
+证据：utp/receipts/a4-19-group-correction-z3-20261104/startup/latest-training-probe.json
+科学曲线未采集前不填结论。"
+A4.20,已停止,与A4.18(z=2.5)比较，在其余配置完全相同下，将correction norm裁剪阈值收紧至z=2对PickScore奖励及训练稳定性的影响。,,A4.18的z=2对照；唯一算法变化为阈值2.5→2；tmp.tex §4.2：importance coefficient b clipping + 同组同t correction norm标准化裁剪；全10训练时间步；独立8×B200。,逐字节复用A4.18已验证91文件源码归档，trainer/config/stat tracker/launcher不修改；仅CLI覆盖train.correction_norm_z_threshold=2.0；source SHA256=0d60bc634b6b4df00d08b4e79de66b7088b982d37cf8b004767298519634a409,PickScore（原始分数；eval_reward/pickscore日志值×26）,"A_i=(r_i-mean_group(r))/(std_rollout(r)+1e-4)，先clip(A_i,-5,5)，再除T=1。w_i=24*softmax(A_clipped/T)，b_i=clip(w_i-1,-0.5,5)。组是sampler实际24样本group ID，相同prompt的不同rollout组不混合。对同一实际t，c_i,t=x_rollout-(x_t-t*v_old)，使用未乘b的x0 correction L2 norm。组内24样本正负侧合并，mu=mean(norm)，s=sample_std(norm,ddof=1)，z=(norm-mu)/s。仅z>2.0时scale=(mu+2.0*s)/norm，否则scale=1；c_clip=scale*c。target=stopgrad(x_old+b*c_clip)。weight_factor=stopgrad(max(mean_latent(abs(x_current-x_rollout)),1e-5))；policy_loss=mean_latent((x_current-target)^2/weight_factor)，另加1e-4*mean_latent((v_current-v_ref)^2)。冻结old预测前移到每个inner epoch的预计算，并缓存实际fresh noise和old输出，训练复用；跨8rank汇聚标量，完整24×同t统计后映射回训练顺序；未增加old前向总数。每样本独立打乱t顺序但全10t都训练。原training_terms字段residual_l2兼容保存裁剪前x0 correction norm；weights.energy_used保存b，training_terms.energy_used保存实际b*scale，可还原真实target。每条记录通过sample_id连接，weights.group_id包含实际group ID的哈希。fresh seed42，不续训。","UTP p-syd-mullet / b-core-cn-prod；1节点8×B200，80CPU/180Gi，high。SD3.5-Medium，512，LoRA r32/alpha64，fp16，lr3e-4，max_grad_norm1，EMA=True。
+K24；每卡batch9；rollout batches16；1152图/更新；inner epoch1；sample.num_steps10；timestep_fraction1.0；num_train_timesteps10；基础累积16×10=160；eval采样40。
+global_std=True；adv_clip_max5；temperature1；energy_min=-0.5，energy_max=5；correction_norm_z_threshold2.0；sample SD ddof1；hard_gating=False；adaptive_weight_floor1e-5；reference beta1e-4。
+seed42；resume空；num_epochs100000；每10epoch eval/save；log_raw_data=True；无新增自动停止点。排除已知200W节点，8卡启动前与负载下复核enforced/default功率。
+任务：flowawr-a4-20-groupcorr-z2-b200-20261104
+Job UID：802f635e-210f-44ea-9fd6-c8220bad5575
+输出：/mnt/shared_storage/jobs/flowawr-a4-20-groupcorr-z2-b200-20261104/attempts/0cfd4ecb-c570-458d-ad60-4b0e831c938d
+S3：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a4-20-groupcorr-z2-b200-20261104/attempts/0cfd4ecb-c570-458d-ad60-4b0e831c938d/","config/awr_group_correction_clip.py:sd3_pickscore
+scripts/train_awr_sd3_group_correction_clip.py
+flow_grpo/stat_tracking_group_correction_clip.py",RUN_NAME=flowawr_sd3_pickscore_group_correction_clip_z2_a4_20 bash scripts/launchers/run_flowawr_sd3_pickscore_group_correction_clip_8gpu.sh --config.train.correction_norm_z_threshold=2.0,flowawr_sd3_pickscore_group_correction_clip_z2_a4_20,"[停止归档]按用户要求停止，8×B200资源已释放。最后已记录训练step 165，8rank共同确认从0起166条更新记录；其中166条梯度有限且未跳过，最后此类step为165，0条存在非有限梯度、0条跳过optimizer step；Eval至160，17点，最终原始PickScore 23.41947162。40份raw JSONL共1,291,872,427字节已完整归档S3，本地保存可fetch索引；TensorBoard 90,286条/98tags已拉到本地并逐值核验。b clipping [-0.5,5]；同一个24张rollout组、同一实际t，以正负两侧样本共同计算均值及样本标准差（ddof=1），仅对负侧z>2的correction norm做clip，全10t训练；实际存在的metadata（config.json）已逐字节核对并归档；冻结源目录未生成可选说明文件correction_clipping.json，未补造或声称已归档该文件。本组按用户要求暂从结果网页隐藏，全部曲线记录和本地TensorBoard保留；禁止自动恢复或重提。证据：utp/receipts/a4-20-stop-20261104/final-records.json。[/停止归档]
+训练中；已确认有效optimizer更新至少2次；观测时间=2026-11-04T09:41:29.859962+00:00
+证据：utp/receipts/a4-20-group-correction-z2-20261104/startup/latest-training-probe.json
+科学曲线未采集前不填结论。"
+A4.18.1,准备中,"在b[-0.6,5]、仅负侧correction norm裁剪和有效样本自适应分母下，评估同组同t z>2.5阈值对PickScore奖励与训练稳定性的影响，并与另外两个阈值比较。",,A4.18的算法修订版，独立运行、不续训。仅负侧异常correction径向裁剪，分母同步使用有效样本；tau=2.5；全10训练时间步。原A4.18历史参数和结果保留。,已确认修订版独立源码归档；source SHA256=57b6859e0a1288cbdb2ad31cc1d35c372be82c7d7e9e3c6a86200cdd5a918bb6。训练器与配置经15项CPU测试（含解析梯度及双rank完整组统计）；参考utp/receipts/a4-group-correction-revision-20261104/REVISION.json。,PickScore（原始分数；eval_reward/pickscore日志值×26）,"A_i=(r_i-mean_group(r))/(std_rollout(r)+1e-4)，clip(A_i,-5,5)，T=1，w_i=24*softmax(A_clipped/T)，b_i=clip(w_i-1,-0.6,5)。按sampler实际24样本group ID和同一实际t分组，不合并相同prompt的不同rollout组。c_i,t=x_rollout-(x_t-t*v_old)，使用未乘b的x0空间correction L2 norm。全部24样本（正侧、负侧及零系数）共同计算mu=mean(norm)、s=sample_std(norm,ddof=1)、z=(norm-mu)/s。仅b_i<0且z>2.5时scale=(mu+2.5*s)/norm，否则scale=1；c_clip=scale*c。有效样本x0_tilde=stopgrad(x_old+c_clip)，未裁剪样本直接保留原x_rollout以避免FP32相消；target=stopgrad(x_old+b*c_clip)。omega=stopgrad(max(mean_latent(abs(x_current-x0_tilde)),1e-5))；policy_loss=mean_latent((x_current-target)^2/omega)，另加1e-4*mean_latent((v_current-v_ref)^2)。原始x_rollout构造加噪输入，current-old项保留。冻结old预测与fresh noise预计算并由训练复用；跨8rank汇聚完整24×同t统计，每样本全10t训练。weights.energy_used保存原b，training_terms.energy_used保存实际b*scale，原始correction norm与新omega直接落盘并附correction_clipping.json语义说明。fresh seed42，不续训。","UTP p-syd-mullet / b-core-cn-prod；单节点8×B200，80CPU/180Gi，high。用户2026-11-05指定迁移至B200。
+SD3.5-Medium，512，LoRA r32/alpha64，fp16，lr3e-4，max_grad_norm1，EMA=True。
+K24；每卡batch9；rollout batches16；1152图/更新；inner epoch1；sample.num_steps10；timestep_fraction1.0；num_train_timesteps10；基础累积16×10=160；eval采样40。
+global_std=True；adv_clip_max5；temperature1；energy_min=-0.6，energy_max=5；correction_norm_z_threshold=2.5；sample SD ddof1；hard_gating=False；adaptive_weight_floor1e-5；reference beta1e-4。
+seed42；resume空；num_epochs100000；每10epoch eval/save；log_raw_data=True。排除已知额外限功率节点，启动前与实际负载下核对8卡enforced/default功率。
+任务：flowawr-a4-18-1-neg-groupcorr-b200-20261105
+Job UID：9cbd814f-ea2b-4c91-bd2e-ffaf965c6fe9
+Pod UID：d3fc6e77-e1c6-45ea-9221-5fa7fa1f501c
+节点：mi-00e8363105aeac327
+Manifest：utp/a4-18-1-pickscore-negative-group-correction-b200-mullet-20261105-s3.yaml
+输出：/mnt/shared_storage/jobs/flowawr-a4-18-1-neg-groupcorr-b200-20261105/attempts/d3fc6e77-e1c6-45ea-9221-5fa7fa1f501c
+S3：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a4-18-1-neg-groupcorr-b200-20261105/attempts/d3fc6e77-e1c6-45ea-9221-5fa7fa1f501c/","config/awr_group_correction_clip.py:sd3_pickscore
+scripts/train_awr_sd3_group_correction_clip.py
+flow_grpo/stat_tracking_group_correction_clip.py",RUN_NAME=flowawr_sd3_pickscore_negative_group_correction_clip_a4_18_1 bash scripts/launchers/run_flowawr_sd3_pickscore_group_correction_clip_8gpu.sh --config.train.correction_norm_z_threshold=2.5,flowawr_sd3_pickscore_negative_group_correction_clip_a4_18_1,"[最新结果同步]北京时间11-05 13:52:27运行阶段核验：准备中；尚无本次可核验标量快照，未新增曲线。Pod为Running/Ready，但bootstrap仍等待READY.json，尚无trainer进程或训练输出。证据：utp/receipts/all-utp-refresh-20261105-afternoon/publication/publication-validation.json。逐样本raw/诊断曲线未刷新。[/最新结果同步]
+[B200迁移]2026-11-05按用户要求停止旧B300任务，保持参数在独立B200输出目录从头重跑。当前：启动准备中；本次全rank已确认有效optimizer更新数=0；最后已核验global_step=None。观测时间=2026-11-05T02:32:00.878099+00:00。证据：utp/receipts/a4-18-1-negative-group-correction-b200-20261105/latest-observation.json。旧B300结果和原记录保存在迁移归档及历史TensorBoard索引，不与本次B200曲线拼接；本次登记未刷新科学曲线。[/B200迁移]"
+A4.19.1,准备中,"在b[-0.6,5]、仅负侧correction norm裁剪和有效样本自适应分母下，评估同组同t z>3阈值对PickScore奖励与训练稳定性的影响，并与另外两个阈值比较。",,A4.19的算法修订版，独立运行、不续训。仅负侧异常correction径向裁剪，分母同步使用有效样本；tau=3；全10训练时间步。原A4.19历史参数和结果保留。,已确认修订版独立源码归档；source SHA256=57b6859e0a1288cbdb2ad31cc1d35c372be82c7d7e9e3c6a86200cdd5a918bb6。训练器与配置经15项CPU测试（含解析梯度及双rank完整组统计）；参考utp/receipts/a4-group-correction-revision-20261104/REVISION.json。,PickScore（原始分数；eval_reward/pickscore日志值×26）,"A_i=(r_i-mean_group(r))/(std_rollout(r)+1e-4)，clip(A_i,-5,5)，T=1，w_i=24*softmax(A_clipped/T)，b_i=clip(w_i-1,-0.6,5)。按sampler实际24样本group ID和同一实际t分组，不合并相同prompt的不同rollout组。c_i,t=x_rollout-(x_t-t*v_old)，使用未乘b的x0空间correction L2 norm。全部24样本（正侧、负侧及零系数）共同计算mu=mean(norm)、s=sample_std(norm,ddof=1)、z=(norm-mu)/s。仅b_i<0且z>3时scale=(mu+3*s)/norm，否则scale=1；c_clip=scale*c。有效样本x0_tilde=stopgrad(x_old+c_clip)，未裁剪样本直接保留原x_rollout以避免FP32相消；target=stopgrad(x_old+b*c_clip)。omega=stopgrad(max(mean_latent(abs(x_current-x0_tilde)),1e-5))；policy_loss=mean_latent((x_current-target)^2/omega)，另加1e-4*mean_latent((v_current-v_ref)^2)。原始x_rollout构造加噪输入，current-old项保留。冻结old预测与fresh noise预计算并由训练复用；跨8rank汇聚完整24×同t统计，每样本全10t训练。weights.energy_used保存原b，training_terms.energy_used保存实际b*scale，原始correction norm与新omega直接落盘并附correction_clipping.json语义说明。fresh seed42，不续训。","UTP p-syd-mullet / b-core-cn-prod；单节点8×B200，80CPU/180Gi，high。用户2026-11-05指定迁移至B200。
+SD3.5-Medium，512，LoRA r32/alpha64，fp16，lr3e-4，max_grad_norm1，EMA=True。
+K24；每卡batch9；rollout batches16；1152图/更新；inner epoch1；sample.num_steps10；timestep_fraction1.0；num_train_timesteps10；基础累积16×10=160；eval采样40。
+global_std=True；adv_clip_max5；temperature1；energy_min=-0.6，energy_max=5；correction_norm_z_threshold=3；sample SD ddof1；hard_gating=False；adaptive_weight_floor1e-5；reference beta1e-4。
+seed42；resume空；num_epochs100000；每10epoch eval/save；log_raw_data=True。排除已知额外限功率节点，启动前与实际负载下核对8卡enforced/default功率。
+任务：flowawr-a4-19-1-neg-groupcorr-z3-b200-20261105
+Job UID：625d6ad2-38e9-4512-86e1-dd0cf600eeb0
+Pod UID：fc0d4b0a-0235-4156-9ec6-aef4cb727504
+节点：mi-0c8cc330ec40fb902
+Manifest：utp/a4-19-1-pickscore-negative-group-correction-z3-b200-mullet-20261105-s3.yaml
+输出：/mnt/shared_storage/jobs/flowawr-a4-19-1-neg-groupcorr-z3-b200-20261105/attempts/fc0d4b0a-0235-4156-9ec6-aef4cb727504
+S3：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a4-19-1-neg-groupcorr-z3-b200-20261105/attempts/fc0d4b0a-0235-4156-9ec6-aef4cb727504/","config/awr_group_correction_clip.py:sd3_pickscore
+scripts/train_awr_sd3_group_correction_clip.py
+flow_grpo/stat_tracking_group_correction_clip.py",RUN_NAME=flowawr_sd3_pickscore_negative_group_correction_clip_z3_a4_19_1 bash scripts/launchers/run_flowawr_sd3_pickscore_group_correction_clip_8gpu.sh --config.train.correction_norm_z_threshold=3,flowawr_sd3_pickscore_negative_group_correction_clip_z3_a4_19_1,"[最新结果同步]北京时间11-05 13:52:27运行阶段核验：准备中；尚无本次可核验标量快照，未新增曲线。Pod为Running/Ready，但bootstrap仍等待READY.json，尚无trainer进程或训练输出。证据：utp/receipts/all-utp-refresh-20261105-afternoon/publication/publication-validation.json。逐样本raw/诊断曲线未刷新。[/最新结果同步]
+[B200迁移]2026-11-05按用户要求停止旧B300任务，保持参数在独立B200输出目录从头重跑。当前：启动准备中；本次全rank已确认有效optimizer更新数=0；最后已核验global_step=None。观测时间=2026-11-05T02:32:26.935739+00:00。证据：utp/receipts/a4-19-1-negative-group-correction-z3-b200-20261105/latest-observation.json。旧B300结果和原记录保存在迁移归档及历史TensorBoard索引，不与本次B200曲线拼接；本次登记未刷新科学曲线。[/B200迁移]"
+A4.20.1,训练中,"在b[-0.6,5]、仅负侧correction norm裁剪和有效样本自适应分母下，评估同组同t z>2阈值对PickScore奖励与训练稳定性的影响，并与另外两个阈值比较。",,A4.20的算法修订版，独立运行、不续训。仅负侧异常correction径向裁剪，分母同步使用有效样本；tau=2；全10训练时间步。原A4.20历史参数和结果保留。,已确认修订版独立源码归档；source SHA256=57b6859e0a1288cbdb2ad31cc1d35c372be82c7d7e9e3c6a86200cdd5a918bb6。训练器与配置经15项CPU测试（含解析梯度及双rank完整组统计）；参考utp/receipts/a4-group-correction-revision-20261104/REVISION.json。,PickScore（原始分数；eval_reward/pickscore日志值×26）,"A_i=(r_i-mean_group(r))/(std_rollout(r)+1e-4)，clip(A_i,-5,5)，T=1，w_i=24*softmax(A_clipped/T)，b_i=clip(w_i-1,-0.6,5)。按sampler实际24样本group ID和同一实际t分组，不合并相同prompt的不同rollout组。c_i,t=x_rollout-(x_t-t*v_old)，使用未乘b的x0空间correction L2 norm。全部24样本（正侧、负侧及零系数）共同计算mu=mean(norm)、s=sample_std(norm,ddof=1)、z=(norm-mu)/s。仅b_i<0且z>2时scale=(mu+2*s)/norm，否则scale=1；c_clip=scale*c。有效样本x0_tilde=stopgrad(x_old+c_clip)，未裁剪样本直接保留原x_rollout以避免FP32相消；target=stopgrad(x_old+b*c_clip)。omega=stopgrad(max(mean_latent(abs(x_current-x0_tilde)),1e-5))；policy_loss=mean_latent((x_current-target)^2/omega)，另加1e-4*mean_latent((v_current-v_ref)^2)。原始x_rollout构造加噪输入，current-old项保留。冻结old预测与fresh noise预计算并由训练复用；跨8rank汇聚完整24×同t统计，每样本全10t训练。weights.energy_used保存原b，training_terms.energy_used保存实际b*scale，原始correction norm与新omega直接落盘并附correction_clipping.json语义说明。fresh seed42，不续训。","UTP p-syd-mullet / b-core-cn-prod；已核实单节点8×B200，80CPU/180Gi，high。硬件选择遵循B300优先、B200备选。
+SD3.5-Medium，512，LoRA r32/alpha64，fp16，lr3e-4，max_grad_norm1，EMA=True。
+K24；每卡batch9；rollout batches16；1152图/更新；inner epoch1；sample.num_steps10；timestep_fraction1.0；num_train_timesteps10；基础累积16×10=160；eval采样40。
+global_std=True；adv_clip_max5；temperature1；energy_min=-0.6，energy_max=5；correction_norm_z_threshold=2；sample SD ddof1；hard_gating=False；adaptive_weight_floor1e-5；reference beta1e-4。
+seed42；resume空；num_epochs100000；每10epoch eval/save；log_raw_data=True。排除已知额外限功率节点，启动前与实际负载下核对8卡enforced/default功率。
+任务：flowawr-a4-20-1-neg-groupcorr-z2-b200-20261104
+Job UID：5fa09eb2-0852-4f3a-af12-d36852934653
+Pod UID：0fedb052-bbdf-401e-bf06-75819fd9dd10
+节点：mi-00cf9cbcad586f65b
+Manifest：utp/a4-20-1-pickscore-negative-group-correction-z2-b200-mullet-s3.yaml
+输出：/mnt/shared_storage/jobs/flowawr-a4-20-1-neg-groupcorr-z2-b200-20261104/attempts/0fedb052-bbdf-401e-bf06-75819fd9dd10
+S3：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a4-20-1-neg-groupcorr-z2-b200-20261104/attempts/0fedb052-bbdf-401e-bf06-75819fd9dd10/","config/awr_group_correction_clip.py:sd3_pickscore
+scripts/train_awr_sd3_group_correction_clip.py
+flow_grpo/stat_tracking_group_correction_clip.py",RUN_NAME=flowawr_sd3_pickscore_negative_group_correction_clip_z2_a4_20_1 bash scripts/launchers/run_flowawr_sd3_pickscore_group_correction_clip_8gpu.sh --config.train.correction_norm_z_threshold=2,flowawr_sd3_pickscore_negative_group_correction_clip_z2_a4_20_1,"[最新结果同步]北京时间11-05 13:51:46固定快照：Eval step 570，原始PickScore 23.80747986，共58点；来源UID=0fedb052-bbdf-401e-bf06-75819fd9dd10。该来源的全部标量已导出本地TensorBoard并核验。证据：utp/receipts/all-utp-refresh-20261105-afternoon/publication/publication-validation.json。逐样本raw/诊断曲线未刷新。[/最新结果同步]
+训练中；已核实8卡功率与全rank有效optimizer更新至少4次；最后已核验global_step=3。
+观测时间=2026-11-04T15:06:58.402611+00:00
+证据：utp/receipts/a4-20-1-negative-group-correction-z2-20261104/startup/latest-training-probe.json
+尚无本次运行的科学结论。"
+A4.21,训练中,评估GenEval采用PickScore式energy缩放、全10个训练时间步及old预测分母的组合，对GenEval奖励与训练稳定性的影响。,,GenEval；PickScore式energy缩放；全10时间步；old预测分母；独立8×H200。当前为Eagle r2，先前H100及H200 r1请求均在训练开始前撤销。,复用现有config/awr_old_weight.py、scripts/train_awr_sd3_old_weight.py及GenEval old-weight启动脚本；训练算法不改，通过现有CLI覆盖hard_gating与时间步。91个冻结源码文件哈希全部通过，source archive SHA256=7d7538a07019582acaa0c875885cf5a32b9d5a6953cb887814978aee72b2ea9a。,GenEval（原始eval_reward/geneval日志值，不乘26）,"奖励及数据集仍为GenEval。A_i=(r_i-mean_group(r))/(std_rollout(r)+1e-4)，A_clipped=clip(A_i,-5,5)，p_i=softmax(A_clipped/T)，T=1。hard_gating=False，与PickScore一致：b_raw=K*p_i-1，再clip到[-3,3]。不使用GenEval默认hard_gating=True的energy标准差重标定。pred_x0_old=xt-t*v_old；target=pred_x0_old+b*(x_rollout-pred_x0_old)。weight_factor=stopgrad(max(mean_latent(abs(pred_x0_old-x_rollout)),1e-5))，保留float64与no_grad；loss分子仍使用current预测对target的平方误差。每张样本训练索引0–9共10个时间步。无额外residual/correction clipping，其余target、KL、optimizer、梯度裁剪、old及EMA沿用基线。fresh seed42，不续训。","UTP p-iad-eagle / b-core-cn-prod；core-cn-default-queue；实际单节点8×H200，已分配并通过训练负载核验。high-priority，80CPU/180Gi；本次不使用B200。
+SD3.5-Medium，512×512，LoRA r32/alpha64；lr=3e-4；KL=1e-4；fp16；max_grad_norm=1；EMA=True。
+每组24图；每卡batch9；48组共1152图/更新；rollout batches16；gradient_accumulation_steps16；inner_epochs=1；sample.num_steps=10；train.timestep_fraction=1.0；num_train_timesteps=10；有效梯度累积16×10=160。
+训练/评估采样步数10/40；guidance_scale=1；deterministic DPM2；temperature=1；global_std=True；adv_clip_max=5；energy范围[-3,3]；hard_gating=False；filter_zero_advantage=False。
+seed=42；resume_from为空；log_raw_data=True；num_epochs=100000；每10 epoch评估/保存；无新增自动step停止点。
+配置入口：config/awr_old_weight.py:sd3_geneval。CLI覆盖：--config.train.hard_gating=False --config.sample.num_steps=10 --config.train.timestep_fraction=1.0。
+任务：flowawr-a4-21-softk-oldw-h200-20261105-r2
+提交清单：utp/a4-21-geneval-softk-old-weight-allt-h200-eagle-s3-r2.yaml
+S3基准输出：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a4-21-geneval-softk-oldw-allt-hopper-20261105
+RUN_NAME：flowawr_sd3_geneval_softk_old_weight_allt_a4_21
+Job UID：e2d32e42-1a6d-453a-8713-6056ae9db68a
+Pod：flowawr-a4-21-softk-oldw-h200-20261105-r2-workers-0-0-ndbq8
+Pod UID：b5a6eb6f-8762-4493-ae9e-5b0f1c312515
+实际Kueue priority=1000；8×H200 quota reserved；实际节点i-0e28c7fe89a574c26.ec2.internal；8卡default/enforced power均700W。
+实际attempt输出：/mnt/shared_storage/jobs/flowawr-a4-21-softk-oldw-h200-20261105-r2/attempts/b5a6eb6f-8762-4493-ae9e-5b0f1c312515","config/awr_old_weight.py:sd3_geneval
+scripts/train_awr_sd3_old_weight.py
+flow_grpo/stat_tracking.py",RUN_NAME=flowawr_sd3_geneval_softk_old_weight_allt_a4_21 bash scripts/launchers/run_flowawr_sd3_geneval_old_weight_8gpu.sh --config.train.hard_gating=False --config.sample.num_steps=10 --config.train.timestep_fraction=1.0,flowawr_sd3_geneval_softk_old_weight_allt_a4_21,"[最新结果同步]北京时间11-05 13:52:37固定快照：Eval step 20，GenEval 0.73319042，共3点；来源UID=b5a6eb6f-8762-4493-ae9e-5b0f1c312515。该来源的全部标量已导出本地TensorBoard并核验。证据：utp/receipts/all-utp-refresh-20261105-afternoon/publication/publication-validation.json。逐样本raw/诊断曲线未刷新。[/最新结果同步]
+2026-11-05北京时间12:27已确认首个有效optimizer更新（8rank共同step 0→1、全部未skip、梯度有限）。完整启动核验于2026-11-05T04:28:17.385037+00:00通过：91份源码哈希、实际GenEval配置/hard_gating=False/old分母、首轮1152样本×10时间步共11520条训练记录均匹配；8张H200在负载下实际功率上限均为默认700W；8rank原始数据S3归档已读回确认。科学结论待后续训练评估；没有刷新其他实验或伪造曲线。"
+A4.22,训练中,"在保留A4.14的old预测分母及9个训练时间步时，检验仅将energy clipping由[-3,3]改为[-0.6,5]对PickScore奖励和训练稳定性的影响。",,"A4.14的独立对照，clipping改为[-0.6,5]，本次明确保持9步。已分配单节点8×H200，暂不使用B200；原A4.14继续运行。硬件和runtime与原B200运行不同，单独记录此差异。",A4.14冻结源码91个文件逐字节保留，新增可配置energy上下界的old-weight trainer、config和launcher。source SHA256=9bd5e7edf97df97ed923b77fe34b872a2d1285c757bfb9ec3f08259a03ab5410。实验边界和时间步由CLI显式传入，原训练文件不改。,PickScore（原始分数；eval_reward/pickscore日志值×26）,"沿用A4.14：pred_x0_old=xt-t*v_old，target=pred_x0_old+b*(x_rollout-pred_x0_old)，weight_factor=stopgrad(max(mean_latent(abs(pred_x0_old-x_rollout)),1e-5))，保留float64与no_grad，分子仍使用current预测。A_i=(r_i-mean_group(r))/(std_rollout(r)+1e-4)，clip(A_i,-5,5)，T=1，b_raw=K*softmax(A_clipped/T)-1，再clip到[-0.6,5]。hard_gating=False。不新增residual/correction clipping。实际每样本9个训练时间点，与原A4.14一致。其余target、KL、采样、optimizer、梯度裁剪、old及EMA保持基线。裁剪率日志读取实际非对称边界，此项只修正日志。fresh seed42，不续训。","UTP p-iad-eagle / b-core-cn-prod；单节点8×H200；80CPU/180Gi；high-priority。
+SD3.5-Medium，512×512，LoRA r32/alpha64；lr=3e-4；KL=1e-4；fp16；max_grad_norm=1；EMA=True。
+每组24图；每卡batch9；rollout batches16；gradient_accumulation_steps16；1152图/更新；inner_epochs=1；sample.num_steps=10；train.timestep_fraction=0.99；num_train_timesteps=9；有效梯度累积16×9=144。
+评估采样40；guidance_scale=1；deterministic DPM2；temperature=1；global_std=True；adv_clip_max=5；energy范围[-0.6,5]；hard_gating=False；filter_zero_advantage=False。
+seed42；resume为空；log_raw_data=True；num_epochs100000；实际每10epoch评估/保存；无新增自动step停止点。
+新H200 runtime为torch2.6.0/cu124，原A4.14 B200为torch2.7.1/cu128；硬件/runtime差异单独记录，不宣称位级复现。
+任务：flowawr-a4-22-oldw-eclip-h200-20261105。Manifest：utp/a4-22-pickscore-old-weight-energy-clip-h200-eagle-s3.yaml。S3：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a4-22-old-weight-eclip-hopper-20261105。Job UID=b21f7ec2-41c2-4675-8e25-9ef3a61fe57d；Pod UID=0692b75e-6596-48ff-ad28-375a08808085；节点=i-0b9c5cb8bca512b1c.ec2.internal；输出/mnt/shared_storage/jobs/flowawr-a4-22-oldw-eclip-h200-20261105/attempts/0692b75e-6596-48ff-ad28-375a08808085。","config/awr_old_weight_energy_clip.py:sd3_pickscore
+scripts/train_awr_sd3_old_weight_energy_clip.py
+flow_grpo/stat_tracking.py",RUN_NAME=flowawr_sd3_pickscore_old_weight_eclip_m0p6_p5_a4_22 bash scripts/launchers/run_flowawr_sd3_pickscore_old_weight_energy_clip_8gpu.sh --config.train.energy_min=-0.6 --config.train.energy_max=5 --config.sample.num_steps=10 --config.train.timestep_fraction=0.99,flowawr_sd3_pickscore_old_weight_eclip_m0p6_p5_a4_22,"[最新结果同步]北京时间11-05 13:52:37固定快照：Eval step 40，原始PickScore 22.78982782，共5点；来源UID=0692b75e-6596-48ff-ad28-375a08808085。该来源的全部标量已导出本地TensorBoard并核验。证据：utp/receipts/all-utp-refresh-20261105-afternoon/publication/publication-validation.json。逐样本raw/诊断曲线未刷新。[/最新结果同步]
+2026-11-05T04:20:42.047392+00:00核验：Eagle 8×H200训练已开始，Job UID=b21f7ec2-41c2-4675-8e25-9ef3a61fe57d；Pod UID=0692b75e-6596-48ff-ad28-375a08808085，节点=i-0b9c5cb8bca512b1c.ec2.internal。8 rank共同完成首个finite、non-skipped optimizer更新（global_step_before=0，after=1）；已核验94文件source、实际配置、首批1152样本系数clip[-0.6,5]以及每样本9个训练时间点（共10368条，1296/rank），有效累积144。8卡功率默认/实际/enforced均700W，已观察到训练负载。原A4.14继续运行，未迁移B300。证据：utp/receipts/a4-22-old-weight-eclip-20261105/startup/first-training-verification.json、utp/receipts/a4-22-old-weight-eclip-20261105/observation.json。尚无评估结论；未新增科学曲线。"
+A4.23,训练中,以A4.20.1为直接对照，仅将同组同t的correction norm z-score裁剪替换为AvgKNN高端异常裁剪，评估对PickScore奖励与训练稳定性的影响。,,"AvgKNN correction norm clipping；energy[-0.6,5]；仅负侧裁剪、有效样本自适应分母；全10训练时间步。独立新运行，不续训。H100优先，H200/B300备选，暂不使用B200；硬件与runtime差异在实际分配后单独记录。",A4.20.1冻结源码91文件逐字节保留，新增5个生产文件；source SHA256=c1cd910c8712a5bf74e8516be312c63b6b83990315dc04d94ce16d01ff3a8c27。独立AvgKNN实现；41项CPU测试通过。,PickScore（原始分数；eval_reward/pickscore日志值×26）,"A_i=(r_i-mean_group(r))/(std_rollout(r)+1e-4)，clip(A_i,-5,5)，T=1，b_i=clip(K*softmax(A_clipped/T)-1,-0.6,5)。检测按sampler实际rollout group ID×同一实际t分组，不合并相同prompt的不同组，不按打乱后的循环位置混合t。c_i,t=x_rollout-(x_t-t*v_old)，C_i,t=||c_i,t||_2为未乘b的x0空间L2 norm。全部24样本（正侧、负侧及零系数）共同检测：距离|C_i-C_j|，每条取最近k=3个非自身邻居的距离均值a_i；h=mean(a)+2*sample_std(a,ddof=1)。原始分数和阈值只算一次，按C从大到小连续选a_i>h，遇首个a_i<=h即停止；不足k+1条不裁。cap为最大未入选norm。仅候选且b_i<0时scale=cap/C_i，否则scale=1；c_clip=scale*c，方向保持。有效样本x0_tilde=stopgrad(x_old+c_clip)，未裁剪样本直接保留原x_rollout；target=stopgrad(x_old+b*c_clip)。omega=stopgrad(max(mean_latent(abs(x_current-x0_tilde)),1e-5))；policy_loss=mean_latent((x_current-target)^2/omega)，另加1e-4*mean_latent((v_current-v_ref)^2)。原始x_rollout构造加噪输入，fresh noise/old预测缓存并在训练复用，跨rank完整24×同t汇聚。每样本全10t训练。记录C、AvgKNN分数、阈值、候选、cap、实际负侧裁剪与裁后norm。fresh seed42，不续训；除correction clipping规则外，训练目标、分母规则及科学超参数沿用A4.20.1。","单节点8卡；H100优先，H200/B300备选，暂不使用B200；实际提交与分配见下方。
+SD3.5-Medium，512×512，LoRA r32/alpha64；lr3e-4；KL1e-4；fp16；max_grad_norm1；EMA=True。
+每组24图；每卡batch9；48组共1152图/更新；rollout batches16；gradient_accumulation_steps16；inner_epochs1；sample.num_steps10；timestep_fraction1.0；num_train_timesteps10；有效梯度累积由16×10=160派生。
+训练/评估采样10/40；guidance_scale1；deterministic DPM2；temperature1；global_std=True；adv_clip_max5；energy[-0.6,5]；hard_gating=False；filter_zero_advantage=False。
+correction_knn_k=3；correction_score_std_multiplier=2.0；score样本标准差ddof1；adaptive_weight_floor1e-5；reward_std_epsilon1e-4。
+seed42；resume空；log_raw_data=True；num_epochs100000；每10epoch评估/保存；无新增自动step停止点。
+配置入口：config/awr_avgknn_correction_clip.py:sd3_pickscore。训练器：scripts/train_awr_sd3_avgknn_correction_clip.py。
+硬件分配后核对每张卡enforced/default功率，并在实际负载下复核；不使用额外限功率节点。任务名、提交清单及实际输出路径已按提交收据回填如下。
+实际提交：general-aws-usw2-prod-0；申请单节点8×B300，Kueue high=1000。
+运行时：torch2.7.1+cu128 / torchvision0.22.1+cu128；硬件/runtime差异相对A4.20.1单独记录。
+任务：flowawr-a4-23-avgknn-b300-20261105-r2
+Job UID：160f4715-a152-41b3-8cb9-da59353d1a2c
+Manifest：utp/a4-23-pickscore-avgknn-correction-b300-usw2-s3-r2.yaml
+S3：s3://core-cn-training.canva.com/pixelcraft/usr/yixuan/flowawr/a4-23-avgknn-correction-b300-20261105
+Pod：flowawr-a4-23-avgknn-b300-20261105-r2-workers-0-0-wht9r
+Pod UID：b4b0645f-b253-445c-b75c-9dbe0ebd3884
+节点：i-0c24fe9435baad092.us-west-2.compute.internal
+输出：/mnt/shared_storage/jobs/flowawr-a4-23-avgknn-b300-20261105-r2/attempts/b4b0645f-b253-445c-b75c-9dbe0ebd3884","config/awr_avgknn_correction_clip.py:sd3_pickscore
+scripts/train_awr_sd3_avgknn_correction_clip.py
+flow_grpo/stat_tracking_avgknn_correction_clip.py
+flow_grpo/avgknn_correction_logging.py",RUN_NAME=flowawr_sd3_pickscore_avgknn_correction_clip_a4_23 bash scripts/launchers/run_flowawr_sd3_pickscore_avgknn_correction_clip_8gpu.sh --config.train.correction_knn_k=3 --config.train.correction_score_std_multiplier=2.0 --config.train.energy_min=-0.6 --config.train.energy_max=5.0 --config.sample.num_steps=10 --config.train.timestep_fraction=1.0,flowawr_sd3_pickscore_avgknn_correction_clip_a4_23,"[最新结果同步]北京时间11-05 13:52:37固定快照：Eval step 30，原始PickScore 22.65259230，共4点；来源UID=b4b0645f-b253-445c-b75c-9dbe0ebd3884。该来源的全部标量已导出本地TensorBoard并核验。证据：utp/receipts/all-utp-refresh-20261105-afternoon/publication/publication-validation.json。逐样本raw/诊断曲线未刷新。[/最新结果同步]
+训练中；观测时间=2026-11-05T05:02:11.398083+00:00。 已核验全8rank有限且未skip的optimizer更新、每图全10个不同时间步及AvgKNN实际裁剪；已确认更新数=1。
+H100优先申请已因Kueue确认5节点均无法容纳8卡而在训练前撤销（无Pod）；H200未发现整8卡可调度空位，按用户授权转B300；没有使用B200。
+证据：utp/receipts/a4-23-avgknn-correction-20261105/observation-b300-r2.json
+启动证据：utp/receipts/a4-23-avgknn-correction-20261105/startup/first-update-verified.json"
